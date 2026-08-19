@@ -19,7 +19,6 @@ export const Route = createFileRoute("/stats")({
 
 function StatsScreen() {
   const { last7Days, weekStats, monthStats, streak } = useStudy();
-  const prevWeek = weekSummary.rate;
   return (
     <Screen>
       <div className="mb-4 grid grid-cols-2 gap-4">
@@ -58,9 +57,7 @@ function StatsScreen() {
       <div className="grid grid-cols-2 gap-4">
         <Card tone="sky" className="flex flex-col items-center text-center">
           <span className="text-lg font-extrabold text-foreground">이번 주 달성률</span>
-          <span className="mt-1 text-sm font-bold text-up">
-            ▲ 이전 7일보다 {Math.max(weekStats.rate - prevWeek + weekSummary.diff, 0)}%
-          </span>
+          <span className="mt-1 text-sm font-bold text-up">▲ 이전 7일보다 {weekSummary.diff}%</span>
           <Ring rate={weekStats.rate} size={110} className="mt-4" />
           <span className="mt-3 text-sm text-muted-foreground">
             총 {weekStats.done} / {weekStats.total} 완료

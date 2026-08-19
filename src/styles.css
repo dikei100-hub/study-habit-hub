@@ -20,6 +20,19 @@
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
+  --color-surface: var(--surface);
+  --color-lilac: var(--lilac);
+  --color-sky: var(--sky);
+  --color-lemon: var(--lemon);
+  --color-blush: var(--blush);
+  --color-purple: var(--purple);
+  --color-purple-soft: var(--purple-soft);
+  --color-task-green: var(--task-green);
+  --color-task-sky: var(--task-sky);
+  --color-task-peach: var(--task-peach);
+  --color-check: var(--check);
+  --color-up: var(--up);
+  --shadow-soft: var(--shadow-card);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
@@ -63,20 +76,33 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
+  --background: #f4f1fa;
+  --foreground: #4a4458;
+  --surface: #ffffff;
+  --lilac: #e8dff7;
+  --sky: #d6e8fa;
+  --lemon: #fbefb0;
+  --blush: #fbdce4;
+  --purple: #6b4fa8;
+  --purple-soft: #b39de0;
+  --task-green: #dcf0dc;
+  --task-sky: #d6e8fa;
+  --task-peach: #fbe3d0;
+  --check: #34c759;
+  --up: #2e9e5b;
+  --shadow-card: 0 2px 10px rgba(107, 79, 168, 0.07);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
+  --card-foreground: #4a4458;
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
+  --popover-foreground: #4a4458;
+  --primary: #6b4fa8;
+  --primary-foreground: #ffffff;
+  --secondary: #e8dff7;
+  --secondary-foreground: #4a4458;
+  --muted: #ece8f5;
+  --muted-foreground: #8b849c;
+  --accent: #e8dff7;
+  --accent-foreground: #4a4458;
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
   --border: oklch(0.929 0.013 255.508);

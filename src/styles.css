@@ -20,6 +20,19 @@
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
+  --color-surface: var(--surface);
+  --color-lilac: var(--lilac);
+  --color-sky: var(--sky);
+  --color-lemon: var(--lemon);
+  --color-blush: var(--blush);
+  --color-purple: var(--purple);
+  --color-purple-soft: var(--purple-soft);
+  --color-task-green: var(--task-green);
+  --color-task-sky: var(--task-sky);
+  --color-task-peach: var(--task-peach);
+  --color-check: var(--check);
+  --color-up: var(--up);
+  --shadow-soft: var(--shadow-card);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);

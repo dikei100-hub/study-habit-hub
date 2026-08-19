@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { Card, Screen } from "@/components/app/Screen";
-import { calendarMonth, monthRecords, todayTasks } from "@/mockData";
+import { useStudy } from "@/state/StudyStore";
+import { makeDateKey, parseDateKey } from "@/lib/studyDay";
 
 export const Route = createFileRoute("/calendar")({
   head: () => ({
@@ -57,14 +59,21 @@ function DayRing({ rate }: { rate: number }) {
 }
 
 function CalendarScreen() {
-  const { year, month, today } = calendarMonth;
+  const { today, tasksFor, statsFor, toggleTodo } = useStudy();
+  const todayDate = parseDateKey(today);
+  const year = todayDate.getFullYear();
+  const month = todayDate.getMonth() + 1;
+  const todayDay = todayDate.getDate();
+  const [selected, setSelected] = useState(today);
   const firstWeekday = new Date(year, month - 1, 1).getDay();
   const daysInMonth = new Date(year, month, 0).getDate();
   const cells: (number | null)[] = [
     ...Array.from({ length: firstWeekday }, () => null),
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
-  const doneCount = todayTasks.filter((t) => t.done).length;
+  const selectedDate = parseDateKey(selected);
+  const selectedTasks = tasksFor(selected) ?? [];
+  const selectedStats = statsFor(selected);
 
   return (
     <Screen>
@@ -90,56 +99,70 @@ function CalendarScreen() {
               {w}
             </span>
           ))}
-          {cells.map((day, idx) => (
-            <div key={idx} className="flex flex-col items-center gap-1">
-              {day && (
-                <>
-                  <span
-                    className={`text-sm ${day === today ? "text-base font-extrabold text-purple" : "text-foreground"}`}
+          {cells.map((day, idx) => {
+            const key = day ? makeDateKey(year, month, day) : null;
+            const stats = key ? statsFor(key) : null;
+            return (
+              <div key={idx} className="flex flex-col items-center gap-1">
+                {day && key && (
+                  <button
+                    type="button"
+                    onClick={() => setSelected(key)}
+                    className="flex flex-col items-center gap-1"
                   >
-                    {day}
-                  </span>
-                  {day in monthRecords ? (
-                    <DayRing rate={monthRecords[day]!} />
-                  ) : (
-                    <span className="flex h-[34px] items-center text-sm text-muted-foreground">
-                      -
+                    <span
+                      className={`text-sm ${day === todayDay ? "text-base font-extrabold text-purple" : "text-foreground"}`}
+                    >
+                      {day}
                     </span>
-                  )}
-                </>
-              )}
-            </div>
-          ))}
+                    {stats?.hasRecord ? (
+                      <DayRing rate={stats.rate} />
+                    ) : (
+                      <span className="flex h-[34px] items-center text-sm text-muted-foreground">
+                        -
+                      </span>
+                    )}
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       </Card>
 
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-xl font-extrabold text-foreground">8월 19일 (수)</h2>
+        <h2 className="text-xl font-extrabold text-foreground">
+          {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일 (
+          {weekdays[selectedDate.getDay()]})
+        </h2>
         <div className="flex items-center gap-3">
           <button type="button" className="text-base font-semibold text-foreground">
             리스트 관리
           </button>
           <span className="text-sm text-muted-foreground">
-            {doneCount} / {todayTasks.length} 완료
+            {selectedStats.done} / {selectedStats.total} 완료
           </span>
         </div>
       </div>
 
       <ul className="space-y-3">
-        {todayTasks.map((task, i) => (
-          <li
-            key={task.id}
-            className={`flex items-center gap-4 rounded-[20px] px-4 py-4 shadow-soft ${taskTones[i % taskTones.length]}`}
-          >
-            <span
-              className={`flex size-7 items-center justify-center rounded-md ${task.done ? "bg-check" : "bg-surface"}`}
+        {selectedTasks.map((task, i) => (
+          <li key={task.id}>
+            <button
+              type="button"
+              onClick={() => toggleTodo(selected, task.id)}
+              className={`flex w-full items-center gap-4 rounded-[20px] px-4 py-4 text-left shadow-soft ${taskTones[i % taskTones.length]}`}
             >
-              {task.done && <Check size={18} strokeWidth={3} className="text-surface" />}
-            </span>
-            <span className="flex-1 text-lg font-semibold text-foreground">{task.title}</span>
-            <span className="text-sm font-bold text-muted-foreground">
-              {task.done ? "완료" : "진행 중"}
-            </span>
+              <span
+                className={`flex size-7 items-center justify-center rounded-md ${task.done ? "bg-check" : "bg-surface"}`}
+              >
+                {task.done && <Check size={18} strokeWidth={3} className="text-surface" />}
+              </span>
+              <span className="flex-1 text-lg font-semibold text-foreground">{task.title}</span>
+              <span className="text-sm font-bold text-muted-foreground">
+                {task.done ? "완료" : "진행 중"}
+              </span>
+            </button>
           </li>
         ))}
       </ul>

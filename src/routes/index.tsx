@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
 import { CalendarDays, Check } from "lucide-react";
 import { Card, MascotSlot, Screen } from "@/components/app/Screen";
-import { todayTasks, streak } from "@/mockData";
+import { useStudy } from "@/state/StudyStore";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -19,9 +18,9 @@ export const Route = createFileRoute("/")({
 const taskTones = ["bg-task-green", "bg-task-sky", "bg-task-peach"];
 
 function TodayScreen() {
-  const [tasks, setTasks] = useState(todayTasks);
-  const done = tasks.filter((t) => t.done).length;
-  const rate = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
+  const { today, tasksFor, statsFor, toggleTodo, streak } = useStudy();
+  const tasks = tasksFor(today) ?? [];
+  const { done, rate } = statsFor(today);
 
   return (
     <Screen>
@@ -76,11 +75,7 @@ function TodayScreen() {
           <li key={task.id}>
             <button
               type="button"
-              onClick={() =>
-                setTasks((prev) =>
-                  prev.map((t) => (t.id === task.id ? { ...t, done: !t.done } : t)),
-                )
-              }
+              onClick={() => toggleTodo(today, task.id)}
               className={`flex w-full items-center gap-4 rounded-[20px] px-4 py-4 text-left shadow-soft ${taskTones[i % taskTones.length]}`}
             >
               <span

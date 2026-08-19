@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, MascotSlot, Screen } from "@/components/app/Screen";
 import { Ring } from "@/components/app/Ring";
-import { last7Days, monthSummary, streak, weekSummary } from "@/mockData";
+import { monthSummary, weekSummary } from "@/mockData";
+import { useStudy } from "@/state/StudyStore";
+import { shortLabel } from "@/lib/studyDay";
 
 export const Route = createFileRoute("/stats")({
   head: () => ({
@@ -16,6 +18,7 @@ export const Route = createFileRoute("/stats")({
 });
 
 function StatsScreen() {
+  const { last7Days, weekStats, monthStats, streak } = useStudy();
   return (
     <Screen>
       <div className="mb-4 grid grid-cols-2 gap-4">
@@ -35,7 +38,7 @@ function StatsScreen() {
         <h2 className="text-xl font-extrabold text-foreground">최근 7일 달성률</h2>
         <div className="mt-5 flex items-end justify-between gap-2">
           {last7Days.map((d) => (
-            <div key={d.label} className="flex flex-1 flex-col items-center">
+            <div key={d.date} className="flex flex-1 flex-col items-center">
               <div className="flex h-32 w-full items-end justify-center">
                 {d.rate > 0 && (
                   <div
@@ -45,7 +48,7 @@ function StatsScreen() {
                 )}
               </div>
               <span className="mt-2 text-xs text-muted-foreground">{d.rate}%</span>
-              <span className="mt-1 text-xs text-muted-foreground">{d.label}</span>
+              <span className="mt-1 text-xs text-muted-foreground">{shortLabel(d.date)}</span>
             </div>
           ))}
         </div>
@@ -55,17 +58,17 @@ function StatsScreen() {
         <Card tone="sky" className="flex flex-col items-center text-center">
           <span className="text-lg font-extrabold text-foreground">이번 주 달성률</span>
           <span className="mt-1 text-sm font-bold text-up">▲ 이전 7일보다 {weekSummary.diff}%</span>
-          <Ring rate={weekSummary.rate} size={110} className="mt-4" />
+          <Ring rate={weekStats.rate} size={110} className="mt-4" />
           <span className="mt-3 text-sm text-muted-foreground">
-            총 {weekSummary.done} / {weekSummary.total} 완료
+            총 {weekStats.done} / {weekStats.total} 완료
           </span>
         </Card>
         <Card tone="lemon" className="flex flex-col items-center text-center">
           <span className="text-lg font-extrabold text-foreground">{monthSummary.label}</span>
           <span className="mt-1 text-sm text-muted-foreground">매달 새롭게 시작해요</span>
-          <Ring rate={monthSummary.rate} size={110} className="mt-4" />
+          <Ring rate={monthStats.rate} size={110} className="mt-4" />
           <span className="mt-3 text-sm text-muted-foreground">
-            총 {monthSummary.done} / {monthSummary.total} 완료
+            총 {monthStats.done} / {monthStats.total} 완료
           </span>
         </Card>
       </div>

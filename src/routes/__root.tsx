@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { TabBar } from "../components/app/TabBar";
+import { StudyProvider } from "../state/StudyStore";
 
 function NotFoundComponent() {
   return (
@@ -123,9 +124,11 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
-      <TabBar />
+      <StudyProvider>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+        <TabBar />
+      </StudyProvider>
     </QueryClientProvider>
   );
 }

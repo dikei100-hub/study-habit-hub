@@ -1,9 +1,10 @@
-import type { TodosByDate } from "@/lib/seed";
-import { createSeedTodos, ensureToday } from "@/lib/seed";
+import type { TemplateItem, TodosByDate } from "@/lib/seed";
+import { createSeedTemplates, createSeedTodos, fillFromTemplate } from "@/lib/seed";
+import { getStudyDate } from "@/lib/studyDay";
 
 const STORAGE_KEY = "studymate.state.v1";
 
-export type PersistedState = { todosByDate: TodosByDate };
+export type PersistedState = { todosByDate: TodosByDate; templates: TemplateItem[] };
 
 function isValid(value: unknown): value is PersistedState {
   if (!value || typeof value !== "object") return false;
@@ -23,8 +24,20 @@ function isValid(value: unknown): value is PersistedState {
   );
 }
 
+function normalizeTemplates(value: unknown): TemplateItem[] {
+  if (!Array.isArray(value)) return createSeedTemplates();
+  const items = value.filter(
+    (t): t is TemplateItem =>
+      !!t && typeof t === "object" && typeof t.id === "string" && typeof t.title === "string",
+  );
+  if (items.length === 0) return createSeedTemplates();
+  return items.map((t, i) => ({ ...t, sortOrder: typeof t.sortOrder === "number" ? t.sortOrder : i }));
+}
+
 export function createInitialState(): PersistedState {
-  return { todosByDate: ensureToday(createSeedTodos()) };
+  const templates = createSeedTemplates();
+  const todosByDate = fillFromTemplate(createSeedTodos(), getStudyDate(new Date()), templates);
+  return { todosByDate, templates };
 }
 
 /** 저장된 상태를 읽는다. 없거나 깨졌으면 초기값. */
@@ -35,7 +48,11 @@ export function loadState(): PersistedState {
     if (!raw) return createInitialState();
     const parsed: unknown = JSON.parse(raw);
     if (!isValid(parsed)) return createInitialState();
-    return { ...parsed, todosByDate: ensureToday(parsed.todosByDate) };
+    const templates = normalizeTemplates((parsed as PersistedState).templates);
+    return {
+      templates,
+      todosByDate: fillFromTemplate(parsed.todosByDate, getStudyDate(new Date()), templates),
+    };
   } catch {
     return createInitialState();
   }

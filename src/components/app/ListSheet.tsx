@@ -6,9 +6,8 @@ import { useStudy } from "@/state/StudyStore";
 const taskTones = ["bg-task-green", "bg-task-sky", "bg-task-peach"];
 
 export function ListSheet({ date, onClose }: { date: string; onClose: () => void }) {
-  const { templates, tasksFor, toggleTodo, addTemplate, removeTemplate, canToggle } = useStudy();
+  const { templates, addTemplate, removeTemplate, setTemplateEnabled, canManage } = useStudy();
   const [text, setText] = useState("");
-  const tasks = tasksFor(date) ?? [];
 
   const submit = () => {
     if (!text.trim()) return;
@@ -67,8 +66,6 @@ export function ListSheet({ date, onClose }: { date: string; onClose: () => void
 
         <ul className="max-h-[40vh] space-y-3 overflow-y-auto pb-1">
           {templates.map((tpl, i) => {
-            const task = tasks.find((t) => t.title === tpl.title);
-            const done = !!task?.done;
             return (
               <li
                 key={tpl.id}
@@ -76,18 +73,18 @@ export function ListSheet({ date, onClose }: { date: string; onClose: () => void
               >
                 <button
                   type="button"
-                  aria-label={`${tpl.title} 완료 표시`}
-                  onClick={() => task && toggleTodo(date, task.id)}
-                  disabled={!task || !canToggle(date)}
-                  className={`flex size-7 items-center justify-center rounded-md ${done ? "bg-check" : "bg-surface"}`}
+                  aria-label={`${tpl.title} 매일 하기`}
+                  onClick={() => setTemplateEnabled(date, tpl.id, !tpl.enabled)}
+                  disabled={!canManage(date)}
+                  className={`flex size-7 items-center justify-center rounded-md ${tpl.enabled ? "bg-check" : "bg-surface"}`}
                 >
-                  {done && <Check size={18} strokeWidth={3} className="text-surface" />}
+                  {tpl.enabled && <Check size={18} strokeWidth={3} className="text-surface" />}
                 </button>
                 <span className="flex-1 text-lg font-semibold text-foreground">{tpl.title}</span>
                 <button
                   type="button"
                   aria-label={`${tpl.title} 삭제`}
-                  onClick={() => removeTemplate(tpl.id)}
+                  onClick={() => removeTemplate(date, tpl.id)}
                   className="p-1 text-muted-foreground"
                 >
                   <Trash2 size={20} />

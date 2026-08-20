@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { Card, Screen } from "@/components/app/Screen";
+import { ListSheet } from "@/components/app/ListSheet";
 import { useStudy } from "@/state/StudyStore";
 import { makeDateKey, parseDateKey } from "@/lib/studyDay";
 
@@ -59,7 +60,8 @@ function DayRing({ rate }: { rate: number }) {
 }
 
 function CalendarScreen() {
-  const { today, tasksFor, statsFor, toggleTodo } = useStudy();
+  const { today, tasksFor, statsFor, toggleTodo, ensureDate, canManage } = useStudy();
+  const [sheetOpen, setSheetOpen] = useState(false);
   const todayDate = parseDateKey(today);
   const year = todayDate.getFullYear();
   const month = todayDate.getMonth() + 1;
@@ -74,6 +76,10 @@ function CalendarScreen() {
   const selectedDate = parseDateKey(selected);
   const selectedTasks = tasksFor(selected) ?? [];
   const selectedStats = statsFor(selected);
+
+  useEffect(() => {
+    if (canManage(selected)) ensureDate(selected);
+  }, [selected, ensureDate, canManage]);
 
   return (
     <Screen>
@@ -136,9 +142,15 @@ function CalendarScreen() {
           {weekdays[selectedDate.getDay()]})
         </h2>
         <div className="flex items-center gap-3">
-          <button type="button" className="text-base font-semibold text-foreground">
-            리스트 관리
-          </button>
+          {canManage(selected) && (
+            <button
+              type="button"
+              onClick={() => setSheetOpen(true)}
+              className="text-base font-semibold text-foreground"
+            >
+              리스트 관리
+            </button>
+          )}
           <span className="text-sm text-muted-foreground">
             {selectedStats.done} / {selectedStats.total} 완료
           </span>
@@ -166,6 +178,7 @@ function CalendarScreen() {
           </li>
         ))}
       </ul>
+      {sheetOpen && <ListSheet date={selected} onClose={() => setSheetOpen(false)} />}
     </Screen>
   );
 }

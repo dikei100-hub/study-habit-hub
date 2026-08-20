@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { CalendarDays, Check } from "lucide-react";
 import { Card, MascotSlot, Screen } from "@/components/app/Screen";
+import { ListSheet } from "@/components/app/ListSheet";
 import { useStudy } from "@/state/StudyStore";
 
 export const Route = createFileRoute("/")({
@@ -18,9 +20,14 @@ export const Route = createFileRoute("/")({
 const taskTones = ["bg-task-green", "bg-task-sky", "bg-task-peach"];
 
 function TodayScreen() {
-  const { today, tasksFor, statsFor, toggleTodo, streak } = useStudy();
+  const { today, tasksFor, statsFor, toggleTodo, streak, ensureDate } = useStudy();
+  const [sheetOpen, setSheetOpen] = useState(false);
   const tasks = tasksFor(today) ?? [];
   const { done, rate } = statsFor(today);
+
+  useEffect(() => {
+    ensureDate(today);
+  }, [today, ensureDate]);
 
   return (
     <Screen>
@@ -63,6 +70,7 @@ function TodayScreen() {
         <h2 className="text-xl font-extrabold text-foreground">오늘의 할 일</h2>
         <button
           type="button"
+          onClick={() => setSheetOpen(true)}
           className="flex items-center gap-1.5 text-base font-semibold text-foreground"
         >
           <CalendarDays size={18} />
@@ -91,6 +99,7 @@ function TodayScreen() {
           </li>
         ))}
       </ul>
+      {sheetOpen && <ListSheet date={today} onClose={() => setSheetOpen(false)} />}
     </Screen>
   );
 }

@@ -1,7 +1,8 @@
 import { calendarMonth, monthRecords, todayTasks, type Task } from "@/mockData";
-import { getStudyDate, makeDateKey } from "@/lib/studyDay";
+import { makeDateKey } from "@/lib/studyDay";
 
 export type TodosByDate = Record<string, Task[]>;
+export type TemplateItem = { id: string; title: string; sortOrder: number };
 
 const titles = [
   "영어 단어 30개 외우기",
@@ -29,19 +30,30 @@ export function createSeedTodos(): TodosByDate {
   }
 
   const seededToday = makeDateKey(calendarMonth.year, calendarMonth.month, calendarMonth.today);
-  const realToday = getStudyDate(new Date());
-  const base = todayTasks.map((t) => ({ ...t }));
-  todos[seededToday] = base;
-  todos[realToday] = base.map((t) => ({ ...t, id: `${realToday}-${t.id}` }));
+  todos[seededToday] = todayTasks.map((t) => ({ ...t }));
   return todos;
 }
 
-/** 날짜가 바뀌면 오늘의 할 일을 기본 목록으로 채운다. */
-export function ensureToday(todos: TodosByDate): TodosByDate {
-  const key = getStudyDate(new Date());
-  if (todos[key] && todos[key]!.length > 0) return todos;
+export function createSeedTemplates(): TemplateItem[] {
+  return todayTasks.map((t, i) => ({
+    id: `tpl-${i + 1}`,
+    title: t.title,
+    sortOrder: i,
+  }));
+}
+
+/** 대상 날짜에 할 일이 하나도 없으면 템플릿 전체를 미완료로 복사한다. */
+export function fillFromTemplate(
+  todos: TodosByDate,
+  date: string,
+  templates: TemplateItem[],
+): TodosByDate {
+  const list = todos[date];
+  if (list && list.length > 0) return todos;
+  if (templates.length === 0) return todos;
+  const sorted = [...templates].sort((a, b) => a.sortOrder - b.sortOrder);
   return {
     ...todos,
-    [key]: todayTasks.map((t) => ({ ...t, id: `${key}-${t.id}`, done: false })),
+    [date]: sorted.map((t) => ({ id: `${date}-${t.id}`, title: t.title, done: false })),
   };
 }

@@ -35,3 +35,13 @@ export function createSeedTodos(): TodosByDate {
   todos[realToday] = base.map((t) => ({ ...t, id: `${realToday}-${t.id}` }));
   return todos;
 }
+
+/** 날짜가 바뀌면 오늘의 할 일을 기본 목록으로 채운다. */
+export function ensureToday(todos: TodosByDate): TodosByDate {
+  const key = getStudyDate(new Date());
+  if (todos[key] && todos[key]!.length > 0) return todos;
+  return {
+    ...todos,
+    [key]: todayTasks.map((t) => ({ ...t, id: `${key}-${t.id}`, done: false })),
+  };
+}

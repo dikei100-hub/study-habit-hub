@@ -1,5 +1,5 @@
 import type { TodosByDate } from "@/lib/seed";
-import { createSeedTodos } from "@/lib/seed";
+import { createSeedTodos, ensureToday } from "@/lib/seed";
 
 const STORAGE_KEY = "studymate.state.v1";
 
@@ -24,7 +24,7 @@ function isValid(value: unknown): value is PersistedState {
 }
 
 export function createInitialState(): PersistedState {
-  return { todosByDate: createSeedTodos() };
+  return { todosByDate: ensureToday(createSeedTodos()) };
 }
 
 /** 저장된 상태를 읽는다. 없거나 깨졌으면 초기값. */
@@ -35,7 +35,7 @@ export function loadState(): PersistedState {
     if (!raw) return createInitialState();
     const parsed: unknown = JSON.parse(raw);
     if (!isValid(parsed)) return createInitialState();
-    return parsed;
+    return { ...parsed, todosByDate: ensureToday(parsed.todosByDate) };
   } catch {
     return createInitialState();
   }

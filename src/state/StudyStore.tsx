@@ -7,13 +7,17 @@ import {
   type ReactNode,
 } from "react";
 import type { Task } from "@/mockData";
-import type { TodosByDate } from "@/lib/seed";
+import type { TemplateItem, TodosByDate } from "@/lib/seed";
+import { fillFromTemplate } from "@/lib/seed";
 import { createInitialState, loadState, saveState, type PersistedState } from "@/lib/storage";
 import { addDays, getStudyDate, monthKeys, weekKeys } from "@/lib/studyDay";
 
 type Action =
   | { type: "hydrate"; state: PersistedState }
-  | { type: "toggleTodo"; date: string; id: string };
+  | { type: "toggleTodo"; date: string; id: string }
+  | { type: "ensureDate"; date: string }
+  | { type: "addTemplate"; date: string; title: string }
+  | { type: "removeTemplate"; id: string };
 
 function reducer(state: PersistedState, action: Action): PersistedState {
   switch (action.type) {
@@ -32,6 +36,27 @@ function reducer(state: PersistedState, action: Action): PersistedState {
         },
       };
     }
+    case "ensureDate": {
+      const next = fillFromTemplate(state.todosByDate, action.date, state.templates);
+      return next === state.todosByDate ? state : { ...state, todosByDate: next };
+    }
+    case "addTemplate": {
+      const title = action.title.trim();
+      if (!title) return state;
+      const id = `tpl-${Date.now()}`;
+      const sortOrder =
+        state.templates.reduce((max, t) => Math.max(max, t.sortOrder), -1) + 1;
+      const list = state.todosByDate[action.date] ?? [];
+      return {
+        templates: [...state.templates, { id, title, sortOrder }],
+        todosByDate: {
+          ...state.todosByDate,
+          [action.date]: [...list, { id: `${action.date}-${id}`, title, done: false }],
+        },
+      };
+    }
+    case "removeTemplate":
+      return { ...state, templates: state.templates.filter((t) => t.id !== action.id) };
     default:
       return state;
   }
@@ -60,7 +85,13 @@ function rangeStats(todos: TodosByDate, keys: string[]) {
 type StudyStore = {
   today: string;
   todosByDate: TodosByDate;
+  templates: TemplateItem[];
   toggleTodo: (date: string, id: string) => void;
+  ensureDate: (date: string) => void;
+  addTemplate: (date: string, title: string) => void;
+  removeTemplate: (id: string) => void;
+  canToggle: (date: string) => boolean;
+  canManage: (date: string) => boolean;
   tasksFor: (date: string) => Task[] | undefined;
   statsFor: (date: string) => DayStats;
   last7Days: { date: string; rate: number }[];
@@ -114,10 +145,22 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       prev = key;
     }
 
+    const canToggle = (date: string) => date === today;
+    const canManage = (date: string) => date >= today;
+
     return {
       today,
       todosByDate: todos,
-      toggleTodo: (date, id) => dispatch({ type: "toggleTodo", date, id }),
+      templates: [...state.templates].sort((a, b) => a.sortOrder - b.sortOrder),
+      toggleTodo: (date, id) => {
+        if (!canToggle(date)) return;
+        dispatch({ type: "toggleTodo", date, id });
+      },
+      ensureDate: (date) => dispatch({ type: "ensureDate", date }),
+      addTemplate: (date, title) => dispatch({ type: "addTemplate", date, title }),
+      removeTemplate: (id) => dispatch({ type: "removeTemplate", id }),
+      canToggle,
+      canManage,
       tasksFor: (date) => todos[date],
       statsFor: (date) => statsFor(todos, date),
       last7Days: last7,

@@ -8,7 +8,7 @@ import {
 } from "react";
 import type { Task } from "@/mockData";
 import type { TemplateItem, TodosByDate } from "@/lib/seed";
-import { fillFromTemplate } from "@/lib/seed";
+import { fillFromTemplate, todoIdFor } from "@/lib/seed";
 import { createInitialState, loadState, saveState, type PersistedState } from "@/lib/storage";
 import { addDays, getStudyDate, monthKeys, weekKeys } from "@/lib/studyDay";
 
@@ -17,7 +17,9 @@ type Action =
   | { type: "toggleTodo"; date: string; id: string }
   | { type: "ensureDate"; date: string }
   | { type: "addTemplate"; date: string; title: string }
-  | { type: "removeTemplate"; id: string };
+  | { type: "setTemplateEnabled"; date: string; id: string; enabled: boolean }
+  | { type: "removeTemplate"; date: string; id: string }
+  | { type: "removeTodo"; date: string; id: string };
 
 function reducer(state: PersistedState, action: Action): PersistedState {
   switch (action.type) {
@@ -45,18 +47,56 @@ function reducer(state: PersistedState, action: Action): PersistedState {
       if (!title) return state;
       const id = `tpl-${Date.now()}`;
       const sortOrder =
-        state.templates.reduce((max, t) => Math.max(max, t.sortOrder), -1) + 1;
+        state.templates.reduce((min, t) => Math.min(min, t.sortOrder), 0) - 1;
       const list = state.todosByDate[action.date] ?? [];
       return {
-        templates: [...state.templates, { id, title, sortOrder }],
+        templates: [{ id, title, enabled: true, sortOrder }, ...state.templates],
         todosByDate: {
           ...state.todosByDate,
-          [action.date]: [...list, { id: `${action.date}-${id}`, title, done: false }],
+          [action.date]: [{ id: todoIdFor(action.date, id), title, done: false }, ...list],
         },
       };
     }
-    case "removeTemplate":
-      return { ...state, templates: state.templates.filter((t) => t.id !== action.id) };
+    case "setTemplateEnabled": {
+      const tpl = state.templates.find((t) => t.id === action.id);
+      if (!tpl) return state;
+      const templates = state.templates.map((t) =>
+        t.id === action.id ? { ...t, enabled: action.enabled } : t,
+      );
+      const list = state.todosByDate[action.date] ?? [];
+      const todoId = todoIdFor(action.date, action.id);
+      let nextList = list;
+      if (action.enabled) {
+        if (!list.some((t) => t.id === todoId)) {
+          nextList = [...list, { id: todoId, title: tpl.title, done: false }];
+        }
+      } else {
+        nextList = list.filter((t) => t.id !== todoId);
+      }
+      return {
+        templates,
+        todosByDate: { ...state.todosByDate, [action.date]: nextList },
+      };
+    }
+    case "removeTemplate": {
+      const list = state.todosByDate[action.date] ?? [];
+      const todoId = todoIdFor(action.date, action.id);
+      return {
+        templates: state.templates.filter((t) => t.id !== action.id),
+        todosByDate: {
+          ...state.todosByDate,
+          [action.date]: list.filter((t) => t.id !== todoId),
+        },
+      };
+    }
+    case "removeTodo": {
+      const list = state.todosByDate[action.date];
+      if (!list) return state;
+      return {
+        ...state,
+        todosByDate: { ...state.todosByDate, [action.date]: list.filter((t) => t.id !== action.id) },
+      };
+    }
     default:
       return state;
   }
@@ -89,7 +129,9 @@ type StudyStore = {
   toggleTodo: (date: string, id: string) => void;
   ensureDate: (date: string) => void;
   addTemplate: (date: string, title: string) => void;
-  removeTemplate: (id: string) => void;
+  setTemplateEnabled: (date: string, id: string, enabled: boolean) => void;
+  removeTemplate: (date: string, id: string) => void;
+  removeTodo: (date: string, id: string) => void;
   canToggle: (date: string) => boolean;
   canManage: (date: string) => boolean;
   tasksFor: (date: string) => Task[] | undefined;
@@ -157,8 +199,22 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         dispatch({ type: "toggleTodo", date, id });
       },
       ensureDate: (date) => dispatch({ type: "ensureDate", date }),
-      addTemplate: (date, title) => dispatch({ type: "addTemplate", date, title }),
-      removeTemplate: (id) => dispatch({ type: "removeTemplate", id }),
+      addTemplate: (date, title) => {
+        if (!canManage(date)) return;
+        dispatch({ type: "addTemplate", date, title });
+      },
+      setTemplateEnabled: (date, id, enabled) => {
+        if (!canManage(date)) return;
+        dispatch({ type: "setTemplateEnabled", date, id, enabled });
+      },
+      removeTemplate: (date, id) => {
+        if (!canManage(date)) return;
+        dispatch({ type: "removeTemplate", date, id });
+      },
+      removeTodo: (date, id) => {
+        if (!canManage(date)) return;
+        dispatch({ type: "removeTodo", date, id });
+      },
       canToggle,
       canManage,
       tasksFor: (date) => todos[date],

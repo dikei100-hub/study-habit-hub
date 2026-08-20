@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { CalendarDays, Check } from "lucide-react";
+import { CalendarDays, Check, Trash2 } from "lucide-react";
 import { Card, MascotSlot, Screen } from "@/components/app/Screen";
 import { ListSheet } from "@/components/app/ListSheet";
 import { useStudy } from "@/state/StudyStore";
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/")({
 const taskTones = ["bg-task-green", "bg-task-sky", "bg-task-peach"];
 
 function TodayScreen() {
-  const { today, tasksFor, statsFor, toggleTodo, streak, ensureDate } = useStudy();
+  const { today, tasksFor, statsFor, toggleTodo, removeTodo, streak, ensureDate } = useStudy();
   const [sheetOpen, setSheetOpen] = useState(false);
   const tasks = tasksFor(today) ?? [];
   const { done, rate } = statsFor(today);
@@ -81,21 +81,36 @@ function TodayScreen() {
       <ul className="space-y-3">
         {tasks.map((task, i) => (
           <li key={task.id}>
-            <button
-              type="button"
-              onClick={() => toggleTodo(today, task.id)}
+            <div
               className={`flex w-full items-center gap-4 rounded-[20px] px-4 py-4 text-left shadow-soft ${taskTones[i % taskTones.length]}`}
             >
-              <span
+              <button
+                type="button"
+                aria-label={`${task.title} 완료 표시`}
+                onClick={() => toggleTodo(today, task.id)}
                 className={`flex size-7 items-center justify-center rounded-md ${task.done ? "bg-check" : "bg-surface"}`}
               >
                 {task.done && <Check size={18} strokeWidth={3} className="text-surface" />}
-              </span>
-              <span className="flex-1 text-lg font-semibold text-foreground">{task.title}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleTodo(today, task.id)}
+                className="flex-1 text-left text-lg font-semibold text-foreground"
+              >
+                {task.title}
+              </button>
               <span className="text-sm font-bold text-muted-foreground">
                 {task.done ? "완료" : "진행 중"}
               </span>
-            </button>
+              <button
+                type="button"
+                aria-label={`${task.title} 삭제`}
+                onClick={() => removeTodo(today, task.id)}
+                className="p-1 text-muted-foreground"
+              >
+                <Trash2 size={18} />
+              </button>
+            </div>
           </li>
         ))}
       </ul>

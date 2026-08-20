@@ -31,7 +31,11 @@ function normalizeTemplates(value: unknown): TemplateItem[] {
       !!t && typeof t === "object" && typeof t.id === "string" && typeof t.title === "string",
   );
   if (items.length === 0) return createSeedTemplates();
-  return items.map((t, i) => ({ ...t, sortOrder: typeof t.sortOrder === "number" ? t.sortOrder : i }));
+  return items.map((t, i) => ({
+    ...t,
+    enabled: typeof t.enabled === "boolean" ? t.enabled : true,
+    sortOrder: typeof t.sortOrder === "number" ? t.sortOrder : i,
+  }));
 }
 
 export function createInitialState(): PersistedState {

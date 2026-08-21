@@ -16,6 +16,11 @@ dist-ssr
 .nitro
 *.local
 
+# 락파일은 bun.lock 하나만 커밋한다.
+# npm 으로 설치하면 생기지만, bunfig.toml 의 minimumReleaseAge 공급망 가드를
+# npm 은 무시하므로 커밋 대상이 아니다.
+package-lock.json
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars

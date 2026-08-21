@@ -21,6 +21,16 @@ type Action =
   | { type: "removeTemplate"; date: string; id: string }
   | { type: "removeTodo"; date: string; id: string };
 
+/**
+ * 그 날짜의 할 일을 실제로 만든다(없을 때만).
+ * 미래 날짜는 둘러보기만으로 만들지 않는다. 사용자가 실제로 편집할 때
+ * 이 시점에 만들어야 통계와 달력에 계획한 적 없는 0% 기록이 남지 않는다.
+ */
+function materialize(state: PersistedState, date: string): PersistedState {
+  const next = fillFromTemplate(state.todosByDate, date, state.templates);
+  return next === state.todosByDate ? state : { ...state, todosByDate: next };
+}
+
 function reducer(state: PersistedState, action: Action): PersistedState {
   switch (action.type) {
     case "hydrate":
@@ -38,21 +48,19 @@ function reducer(state: PersistedState, action: Action): PersistedState {
         },
       };
     }
-    case "ensureDate": {
-      const next = fillFromTemplate(state.todosByDate, action.date, state.templates);
-      return next === state.todosByDate ? state : { ...state, todosByDate: next };
-    }
+    case "ensureDate":
+      return materialize(state, action.date);
     case "addTemplate": {
       const title = action.title.trim();
       if (!title) return state;
+      const s = materialize(state, action.date);
       const id = `tpl-${Date.now()}`;
-      const sortOrder =
-        state.templates.reduce((min, t) => Math.min(min, t.sortOrder), 0) - 1;
-      const list = state.todosByDate[action.date] ?? [];
+      const sortOrder = s.templates.reduce((min, t) => Math.min(min, t.sortOrder), 0) - 1;
+      const list = s.todosByDate[action.date] ?? [];
       return {
-        templates: [{ id, title, enabled: true, sortOrder }, ...state.templates],
+        templates: [{ id, title, enabled: true, sortOrder }, ...s.templates],
         todosByDate: {
-          ...state.todosByDate,
+          ...s.todosByDate,
           [action.date]: [{ id: todoIdFor(action.date, id), title, done: false }, ...list],
         },
       };
@@ -60,10 +68,12 @@ function reducer(state: PersistedState, action: Action): PersistedState {
     case "setTemplateEnabled": {
       const tpl = state.templates.find((t) => t.id === action.id);
       if (!tpl) return state;
-      const templates = state.templates.map((t) =>
+      // 켜는 경우엔 아직 꺼져 있는 상태로 깔리고, 끄는 경우엔 깔린 뒤 빠진다.
+      const s = materialize(state, action.date);
+      const templates = s.templates.map((t) =>
         t.id === action.id ? { ...t, enabled: action.enabled } : t,
       );
-      const list = state.todosByDate[action.date] ?? [];
+      const list = s.todosByDate[action.date] ?? [];
       const todoId = todoIdFor(action.date, action.id);
       let nextList = list;
       if (action.enabled) {
@@ -86,26 +96,28 @@ function reducer(state: PersistedState, action: Action): PersistedState {
       }
       return {
         templates,
-        todosByDate: { ...state.todosByDate, [action.date]: nextList },
+        todosByDate: { ...s.todosByDate, [action.date]: nextList },
       };
     }
     case "removeTemplate": {
-      const list = state.todosByDate[action.date] ?? [];
+      const s = materialize(state, action.date);
+      const list = s.todosByDate[action.date] ?? [];
       const todoId = todoIdFor(action.date, action.id);
       return {
-        templates: state.templates.filter((t) => t.id !== action.id),
+        templates: s.templates.filter((t) => t.id !== action.id),
         todosByDate: {
-          ...state.todosByDate,
+          ...s.todosByDate,
           [action.date]: list.filter((t) => t.id !== todoId),
         },
       };
     }
     case "removeTodo": {
-      const list = state.todosByDate[action.date];
+      const s = materialize(state, action.date);
+      const list = s.todosByDate[action.date];
       if (!list) return state;
       return {
-        ...state,
-        todosByDate: { ...state.todosByDate, [action.date]: list.filter((t) => t.id !== action.id) },
+        ...s,
+        todosByDate: { ...s.todosByDate, [action.date]: list.filter((t) => t.id !== action.id) },
       };
     }
     default:
@@ -146,6 +158,7 @@ type StudyStore = {
   canToggle: (date: string) => boolean;
   canManage: (date: string) => boolean;
   tasksFor: (date: string) => Task[] | undefined;
+  previewFor: (date: string) => Task[];
   statsFor: (date: string) => DayStats;
   last7Days: { date: string; rate: number }[];
   weekStats: { done: number; total: number; rate: number };
@@ -229,6 +242,11 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       canToggle,
       canManage,
       tasksFor: (date) => todos[date],
+      // 저장된 목록이 있으면 그것, 없으면 켜진 템플릿으로 만든 미리보기.
+      // 미리보기는 저장되지 않는다. 기록이 없는 과거 날짜는 빈 목록이다.
+      previewFor: (date) =>
+        todos[date] ??
+        (canManage(date) ? (fillFromTemplate({}, date, state.templates)[date] ?? []) : []),
       statsFor: (date) => statsFor(todos, date),
       last7Days: last7,
       weekStats: rangeStats(todos, weekKeys(today)),

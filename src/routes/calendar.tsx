@@ -60,7 +60,7 @@ function DayRing({ rate }: { rate: number }) {
 }
 
 function CalendarScreen() {
-  const { today, tasksFor, statsFor, toggleTodo, removeTodo, ensureDate, canManage } = useStudy();
+  const { today, previewFor, statsFor, toggleTodo, removeTodo, ensureDate, canManage } = useStudy();
   const [sheetOpen, setSheetOpen] = useState(false);
   const todayDate = parseDateKey(today);
   const [view, setView] = useState({
@@ -86,12 +86,13 @@ function CalendarScreen() {
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
   const selectedDate = parseDateKey(selected);
-  const selectedTasks = tasksFor(selected) ?? [];
-  const selectedStats = statsFor(selected);
+  // 미래 날짜는 미리보기만 보여준다. 저장은 사용자가 실제로 편집할 때 일어난다.
+  const selectedTasks = previewFor(selected);
+  const selectedDone = selectedTasks.filter((t) => t.done).length;
 
   useEffect(() => {
-    if (canManage(selected)) ensureDate(selected);
-  }, [selected, ensureDate, canManage]);
+    if (selected === today) ensureDate(selected);
+  }, [selected, today, ensureDate]);
 
   return (
     <Screen>
@@ -174,7 +175,7 @@ function CalendarScreen() {
             </button>
           )}
           <span className="text-sm text-muted-foreground">
-            {selectedStats.done} / {selectedStats.total} 완료
+            {selectedDone} / {selectedTasks.length} 완료
           </span>
         </div>
       </div>

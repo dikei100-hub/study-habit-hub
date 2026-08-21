@@ -68,7 +68,18 @@ function reducer(state: PersistedState, action: Action): PersistedState {
       let nextList = list;
       if (action.enabled) {
         if (!list.some((t) => t.id === todoId)) {
-          nextList = [...list, { id: todoId, title: tpl.title, done: false }];
+          // 템플릿 순서상 뒤에 오는 첫 항목 앞에 끼워 넣는다. 맨 뒤에 붙이면
+          // 리스트 관리에 보이는 순서와 오늘의 할 일 순서가 어긋난다.
+          const rank = new Map(
+            templates
+              .filter((t) => t.enabled)
+              .sort((a, b) => a.sortOrder - b.sortOrder)
+              .map((t, i) => [todoIdFor(action.date, t.id), i] as const),
+          );
+          const pos = rank.get(todoId) ?? templates.length;
+          const at = list.findIndex((t) => (rank.get(t.id) ?? -1) > pos);
+          const item = { id: todoId, title: tpl.title, done: false };
+          nextList = at === -1 ? [...list, item] : [...list.slice(0, at), item, ...list.slice(at)];
         }
       } else {
         nextList = list.filter((t) => t.id !== todoId);

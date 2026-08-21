@@ -24,6 +24,7 @@ function tasksForRate(dateKey: string, rate: number): Task[] {
 
 export function createSeedTodos(): TodosByDate {
   const today = getStudyDate(new Date());
+  const templates = createSeedTemplates();
   const todos: TodosByDate = {};
 
   // monthRecords 의 키는 calendarMonth.today 기준 상대 위치로 읽는다.
@@ -33,7 +34,14 @@ export function createSeedTodos(): TodosByDate {
     todos[key] = tasksForRate(key, rate);
   }
 
-  todos[today] = todayTasks.map((t) => ({ ...t }));
+  // 오늘 할 일은 템플릿에서 깔린 것으로 취급한다. 리스트 관리 시트가
+  // `${날짜}-${템플릿id}` 로 항목을 찾으므로(todoIdFor), 시드도 같은 형식이어야
+  // 체크 해제·휴지통이 오늘 할 일에 반영된다. (CoreRules 2·3장)
+  todos[today] = todayTasks.map((task, i) => {
+    const tpl = templates.find((t) => t.title === task.title);
+    return { ...task, id: tpl ? todoIdFor(today, tpl.id) : `${today}-seed-${i + 1}` };
+  });
+
   return todos;
 }
 

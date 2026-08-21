@@ -17,12 +17,15 @@ There is no test tooling in this project — no vitest/jest, no test script, no 
 
 Type checking has no dedicated script. `tsc --noEmit` works (tsconfig sets `noEmit`), but note the strict flags below.
 
-## Lovable-connected project
+## Lovable leftovers (the sync is disconnected)
 
-This repo syncs bidirectionally with Lovable (`.lovable/project.json`, `AGENTS.md`). Two consequences:
+This project started on Lovable. The connection is gone — `.lovable/` and `AGENTS.md` were removed, and `main` no longer syncs anywhere. Work on `main` normally.
 
-- **Never rewrite published git history** — no force push, no rebasing/amending/squashing pushed commits. It corrupts history on Lovable's side.
-- Commits pushed to `main` appear in the Lovable editor, so keep the branch working.
+What still genuinely depends on Lovable packages — **do not rip these out casually**:
+
+- `vite.config.ts` is built entirely on `@lovable.dev/vite-tanstack-config`, which supplies tanstackStart, viteReact, tailwindcss, tsConfigPaths, nitro, the `@` alias, and dedupe config. Removing it means rewriting the whole Vite config by hand.
+- `src/lib/lovable-error-reporting.ts` (used by `__root.tsx`) posts client errors to a `window.__lovableEvents` hook. It's a no-op outside the Lovable editor, so it's harmless but dead.
+- `__root.tsx` still sets `twitter:site` to `@Lovable`.
 
 `bunfig.toml` sets a 24-hour `minimumReleaseAge` supply-chain guard on installs. Confirm with the user before adding anything to `minimumReleaseAgeExcludes`.
 

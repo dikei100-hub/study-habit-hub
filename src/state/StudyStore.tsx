@@ -126,7 +126,11 @@ export type DayStats = { done: number; total: number; rate: number; hasRecord: b
 
 function statsFor(todos: TodosByDate, date: string): DayStats {
   const list = todos[date];
-  if (!list || list.length === 0) return { done: 0, total: 0, rate: 0, hasRecord: !!list };
+  // 묻는 것은 "화면에 보여줄 기록이 있나" 이므로 빈 배열은 false 다.
+  // fillFromTemplate 은 "만든 적이 있나" 를 키 존재로 묻는다. 기준이 다른 것이
+  // 의도다. 그래야 사용자가 비운 날은 다시 깔리지 않으면서 달력에는 0% 링 대신
+  // `-` 가 뜨고 스트릭도 그날에서 끊긴다. 통일하지 말 것.
+  if (!list || list.length === 0) return { done: 0, total: 0, rate: 0, hasRecord: false };
   const done = list.filter((t) => t.done).length;
   return { done, total: list.length, rate: Math.round((done / list.length) * 100), hasRecord: true };
 }

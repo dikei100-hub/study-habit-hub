@@ -57,8 +57,11 @@ export function fillFromTemplate(
   date: string,
   templates: TemplateItem[],
 ): TodosByDate {
-  const list = todos[date];
-  if (list && list.length > 0) return todos;
+  // 묻는 것은 "이 날짜를 만든 적이 있나" 이므로 길이가 아니라 키 존재로 본다.
+  // 사용자가 항목을 전부 지운 빈 배열도 만든 적이 있는 것이라 다시 깔지 않는다.
+  // statsFor 는 "화면에 보여줄 기록이 있나" 라는 다른 질문이라 기준이 다르다.
+  // 두 기준을 통일하지 말 것.
+  if (date in todos) return todos;
   // filter 가 사라져 원본 배열이 그대로 들어오므로 복사한 뒤 정렬한다.
   const sorted = [...templates].sort((a, b) => a.sortOrder - b.sortOrder);
   if (sorted.length === 0) return todos;

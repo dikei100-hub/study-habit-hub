@@ -6,7 +6,8 @@ import { useStudy } from "@/state/StudyStore";
 const taskTones = ["bg-task-green", "bg-task-sky", "bg-task-peach"];
 
 export function ListSheet({ date, onClose }: { date: string; onClose: () => void }) {
-  const { templates, addTemplate, removeTemplate, setTemplateEnabled, canManage } = useStudy();
+  const { templates, addTemplate, removeTemplate, setTemplateOnDate, isTemplateOn, canManage } =
+    useStudy();
   const [text, setText] = useState("");
 
   const submit = () => {
@@ -66,6 +67,7 @@ export function ListSheet({ date, onClose }: { date: string; onClose: () => void
 
         <ul className="max-h-[40vh] space-y-3 overflow-y-auto pb-1">
           {templates.map((tpl, i) => {
+            const on = isTemplateOn(date, tpl.id);
             return (
               <li
                 key={tpl.id}
@@ -73,12 +75,12 @@ export function ListSheet({ date, onClose }: { date: string; onClose: () => void
               >
                 <button
                   type="button"
-                  aria-label={`${tpl.title} 매일 하기`}
-                  onClick={() => setTemplateEnabled(date, tpl.id, !tpl.enabled)}
+                  aria-label={on ? `${tpl.title} 이 날짜에서 빼기` : `${tpl.title} 이 날짜에 넣기`}
+                  onClick={() => setTemplateOnDate(date, tpl.id, !on)}
                   disabled={!canManage(date)}
-                  className={`flex size-7 items-center justify-center rounded-md ${tpl.enabled ? "bg-check" : "bg-surface"}`}
+                  className={`flex size-7 items-center justify-center rounded-md ${on ? "bg-check" : "bg-surface"}`}
                 >
-                  {tpl.enabled && <Check size={18} strokeWidth={3} className="text-surface" />}
+                  {on && <Check size={18} strokeWidth={3} className="text-surface" />}
                 </button>
                 <span className="flex-1 text-lg font-semibold text-foreground">{tpl.title}</span>
                 <button

@@ -17,7 +17,7 @@ type Action =
   | { type: "toggleTodo"; date: string; id: string }
   | { type: "ensureDate"; date: string }
   | { type: "addTemplate"; date: string; title: string }
-  | { type: "setTemplateEnabled"; date: string; id: string; enabled: boolean }
+  | { type: "setTemplateOnDate"; date: string; id: string; on: boolean }
   | { type: "removeTemplate"; date: string; id: string }
   | { type: "removeTodo"; date: string; id: string };
 
@@ -58,35 +58,32 @@ function reducer(state: PersistedState, action: Action): PersistedState {
       const sortOrder = s.templates.reduce((min, t) => Math.min(min, t.sortOrder), 0) - 1;
       const list = s.todosByDate[action.date] ?? [];
       return {
-        templates: [{ id, title, enabled: true, sortOrder }, ...s.templates],
+        templates: [{ id, title, sortOrder }, ...s.templates],
         todosByDate: {
           ...s.todosByDate,
           [action.date]: [{ id: todoIdFor(action.date, id), title, done: false }, ...list],
         },
       };
     }
-    case "setTemplateEnabled": {
+    // 체크박스는 "그 날짜 목록에 들어 있는가" 를 비추는 파생값이므로(CoreRules 2장)
+    // 이 액션은 templates 배열을 건드리지 않고 그 날짜의 목록만 바꾼다.
+    case "setTemplateOnDate": {
       const tpl = state.templates.find((t) => t.id === action.id);
       if (!tpl) return state;
-      // 켜는 경우엔 아직 꺼져 있는 상태로 깔리고, 끄는 경우엔 깔린 뒤 빠진다.
       const s = materialize(state, action.date);
-      const templates = s.templates.map((t) =>
-        t.id === action.id ? { ...t, enabled: action.enabled } : t,
-      );
       const list = s.todosByDate[action.date] ?? [];
       const todoId = todoIdFor(action.date, action.id);
       let nextList = list;
-      if (action.enabled) {
+      if (action.on) {
         if (!list.some((t) => t.id === todoId)) {
           // 템플릿 순서상 뒤에 오는 첫 항목 앞에 끼워 넣는다. 맨 뒤에 붙이면
           // 리스트 관리에 보이는 순서와 오늘의 할 일 순서가 어긋난다.
           const rank = new Map(
-            templates
-              .filter((t) => t.enabled)
+            [...s.templates]
               .sort((a, b) => a.sortOrder - b.sortOrder)
               .map((t, i) => [todoIdFor(action.date, t.id), i] as const),
           );
-          const pos = rank.get(todoId) ?? templates.length;
+          const pos = rank.get(todoId) ?? s.templates.length;
           const at = list.findIndex((t) => (rank.get(t.id) ?? -1) > pos);
           const item = { id: todoId, title: tpl.title, done: false };
           nextList = at === -1 ? [...list, item] : [...list.slice(0, at), item, ...list.slice(at)];
@@ -95,7 +92,7 @@ function reducer(state: PersistedState, action: Action): PersistedState {
         nextList = list.filter((t) => t.id !== todoId);
       }
       return {
-        templates,
+        ...s,
         todosByDate: { ...s.todosByDate, [action.date]: nextList },
       };
     }
@@ -152,13 +149,14 @@ type StudyStore = {
   toggleTodo: (date: string, id: string) => void;
   ensureDate: (date: string) => void;
   addTemplate: (date: string, title: string) => void;
-  setTemplateEnabled: (date: string, id: string, enabled: boolean) => void;
+  setTemplateOnDate: (date: string, id: string, on: boolean) => void;
   removeTemplate: (date: string, id: string) => void;
   removeTodo: (date: string, id: string) => void;
   canToggle: (date: string) => boolean;
   canManage: (date: string) => boolean;
   tasksFor: (date: string) => Task[] | undefined;
   previewFor: (date: string) => Task[];
+  isTemplateOn: (date: string, id: string) => boolean;
   statsFor: (date: string) => DayStats;
   last7Days: { date: string; rate: number }[];
   weekStats: { done: number; total: number; rate: number };
@@ -227,9 +225,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         if (!canManage(date)) return;
         dispatch({ type: "addTemplate", date, title });
       },
-      setTemplateEnabled: (date, id, enabled) => {
+      setTemplateOnDate: (date, id, on) => {
         if (!canManage(date)) return;
-        dispatch({ type: "setTemplateEnabled", date, id, enabled });
+        dispatch({ type: "setTemplateOnDate", date, id, on });
       },
       removeTemplate: (date, id) => {
         if (!canManage(date)) return;
@@ -242,11 +240,18 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       canToggle,
       canManage,
       tasksFor: (date) => todos[date],
-      // 저장된 목록이 있으면 그것, 없으면 켜진 템플릿으로 만든 미리보기.
+      // 저장된 목록이 있으면 그것, 없으면 템플릿으로 만든 미리보기.
       // 미리보기는 저장되지 않는다. 기록이 없는 과거 날짜는 빈 목록이다.
       previewFor: (date) =>
         todos[date] ??
         (canManage(date) ? (fillFromTemplate({}, date, state.templates)[date] ?? []) : []),
+      // 체크박스가 읽는 유일한 판정. 시트가 직접 계산하지 않게 여기 둔다.
+      isTemplateOn: (date, id) => {
+        const list =
+          todos[date] ??
+          (canManage(date) ? (fillFromTemplate({}, date, state.templates)[date] ?? []) : []);
+        return list.some((t) => t.id === todoIdFor(date, id));
+      },
       statsFor: (date) => statsFor(todos, date),
       last7Days: last7,
       weekStats: rangeStats(todos, weekKeys(today)),

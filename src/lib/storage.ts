@@ -2,7 +2,9 @@ import type { TemplateItem, TodosByDate } from "@/lib/seed";
 import { createSeedTemplates, createSeedTodos, fillFromTemplate } from "@/lib/seed";
 import { getStudyDate } from "@/lib/studyDay";
 
-const STORAGE_KEY = "studymate.state.v1";
+// v2: 템플릿에서 on/off 플래그를 없앴다(CoreRules 2장 재정의). 마이그레이션은
+// 두지 않고 v1 키는 지우지 않은 채 남겨 둔다.
+const STORAGE_KEY = "studymate.state.v2";
 
 export type PersistedState = { todosByDate: TodosByDate; templates: TemplateItem[] };
 
@@ -31,9 +33,10 @@ function normalizeTemplates(value: unknown): TemplateItem[] {
       !!t && typeof t === "object" && typeof t.id === "string" && typeof t.title === "string",
   );
   if (items.length === 0) return createSeedTemplates();
+  // 스프레드로 옛 스키마의 플래그가 흘러들지 않도록 필요한 필드만 명시적으로 뽑는다.
   return items.map((t, i) => ({
-    ...t,
-    enabled: typeof t.enabled === "boolean" ? t.enabled : true,
+    id: t.id,
+    title: t.title,
     sortOrder: typeof t.sortOrder === "number" ? t.sortOrder : i,
   }));
 }

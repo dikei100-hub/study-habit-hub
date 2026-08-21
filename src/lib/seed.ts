@@ -2,7 +2,7 @@ import { calendarMonth, monthRecords, todayTasks, type Task } from "@/mockData";
 import { addDays, getStudyDate } from "@/lib/studyDay";
 
 export type TodosByDate = Record<string, Task[]>;
-export type TemplateItem = { id: string; title: string; enabled: boolean; sortOrder: number };
+export type TemplateItem = { id: string; title: string; sortOrder: number };
 
 const titles = [
   "영어 단어 30개 외우기",
@@ -47,11 +47,11 @@ export function createSeedTodos(): TodosByDate {
 
 export function createSeedTemplates(): TemplateItem[] {
   return ["영어 단어 30개 외우기", "수학 문제집 2장 풀기", "복습 노트 정리하기"].map(
-    (title, i) => ({ id: `tpl-${i + 1}`, title, enabled: true, sortOrder: i }),
+    (title, i) => ({ id: `tpl-${i + 1}`, title, sortOrder: i }),
   );
 }
 
-/** 대상 날짜에 할 일이 하나도 없으면 on 상태 템플릿을 미완료로 복사한다. */
+/** 대상 날짜에 할 일이 하나도 없으면 목록의 모든 항목을 미완료로 복사한다. */
 export function fillFromTemplate(
   todos: TodosByDate,
   date: string,
@@ -59,7 +59,8 @@ export function fillFromTemplate(
 ): TodosByDate {
   const list = todos[date];
   if (list && list.length > 0) return todos;
-  const sorted = templates.filter((t) => t.enabled).sort((a, b) => a.sortOrder - b.sortOrder);
+  // filter 가 사라져 원본 배열이 그대로 들어오므로 복사한 뒤 정렬한다.
+  const sorted = [...templates].sort((a, b) => a.sortOrder - b.sortOrder);
   if (sorted.length === 0) return todos;
   return {
     ...todos,

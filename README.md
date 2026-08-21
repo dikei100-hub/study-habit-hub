@@ -1,14 +1,178 @@
-# Welcome to your Lovable project
+# Study Habit Hub
+
+[프로젝트]
+
+고등학생용 공부 습관 앱 "공부체크(StudyMate)"의 웹 버전을 만든다.
+
+아이폰 홈 화면에 추가해서 쓰는 모바일 웹앱이다.
+
+첨부 이미지는 현재 운영 중인 안드로이드 버전의 실제 화면이다.
+
+색감, 여백, 정보 배치, 문구 톤을 최대한 비슷하게 맞출 것.
+
+[이번 요청의 범위 — 이것만 해줘]
+
+화면 뼈대와 디자인 톤만 잡는다.
+
+데이터 저장, 로그인, 백엔드 연동은 하지 않는다.
+
+모든 데이터는 임시 mock 데이터로만 표시한다.
+
+[기술]
+
+- React + Vite + TypeScript + Tailwind (기본값 유지)
+
+- 추가 라이브러리 설치 금지. 아이콘은 lucide-react만 사용.
+
+- 차트 라이브러리 금지. 막대와 원형 링은 div/CSS 또는 인라인 SVG로 직접 만들 것.
+
+- Supabase 연결하지 말 것.
+
+[레이아웃]
+
+- 모바일 전용. 본문 최대 폭 420px, 가운데 정렬.
+
+- 하단 고정 탭바 4개: 오늘 / 통계 / 캘린더 / 보상
+
+  (원본은 상단 탭이지만 iOS에서는 한 손 조작을 위해 하단에 둔다)
+
+  선택된 탭은 연보라 배경의 둥근 사각형으로 강조. 아이콘 위, 글자 아래.
+
+- 설정은 탭에 넣지 않는다. 각 화면 오른쪽 위 톱니 아이콘으로 진입.
+
+- iOS 대응: index.html viewport에 viewport-fit=cover,
+
+  탭바에 env(safe-area-inset-bottom), 본문 상단에 env(safe-area-inset-top) 반영.
+
+- 스크롤은 본문만. 탭바는 고정.
+
+[색상 — 한 곳에 정의할 것]
+
+- 배경: 아주 옅은 라벤더 (#F4F1FA 정도)
+
+- 기본 카드: 흰색
+
+- 강조 카드: 연보라 (#E8DFF7 정도)
+
+- 보조 카드: 연하늘 (#D6E8FA), 연노랑 (#FBEFB0), 연분홍 (#FBDCE4)
+
+- 포인트/링/막대/선택 표시: 보라 (#B39DE0 ~ #6B4FA8)
+
+- 제목 글자: 짙은 보라빛 회색 (#4A4458 정도)
+
+- 할 일 항목 카드: 연두(#DCF0DC) / 하늘(#D6E8FA) / 살구(#FBE3D0) 순환
+
+- 체크박스: 초록 (#34C759 정도)
+
+- 상승 표시 글자: 초록
+
+색상은 CSS 변수 또는 tailwind 설정 한 곳에 모아 정의하고,
+
+컴포넌트 안에 색상 값을 직접 쓰지 말 것.
+
+[디자인 톤]
+
+- 카드 라운드 20px 내외, 아주 옅은 그림자, 테두리 없음.
+
+- 글자 크게, 여백 넉넉하게, 정보 밀도 낮게.
+
+- 숫자는 크고 굵게, 설명 글자는 작고 연하게.
+
+- 문구는 "관리"가 아니라 "응원" 톤. 이모지를 절제해서 사용.
+
+  예: "오늘 목표 달성! 🎉 / 정말 최고예요, 오늘 하루 수고했어요 💜"
+
+[화면별 내용]
+
+1. 오늘
+
+   - 상단: 마스코트 자리(원형) + 인사말 2줄
+
+   - 달성률 카드(연보라): "오늘 목표 달성률" + 큰 퍼센트 숫자,
+
+     그 아래 진행 바, 맨 아래 "3 / 3 완료"와 "🔥 1일 연속 달성 중 · 최고 4일"
+
+   - "오늘의 할 일" 제목 + 오른쪽에 "리스트 관리" 버튼
+
+   - 할 일 목록. 각 항목은 큰 체크박스 + 제목 + 오른쪽에 완료 표시.
+
+     체크하면 달성률이 즉시 바뀐다(화면 안 상태로만).
+
+2. 통계 (위에서부터 순서대로)
+
+   - 2열 카드: 왼쪽 "연속 달성" (연하늘, 큰 숫자 + 🔥) /
+
+     오른쪽 "꾸준함이 힘이에요!" (연보라, 마스코트 자리)
+
+   - 전폭 카드(연보라) "최근 7일 달성률":
+
+     세로 막대 7개. 막대 아래에 퍼센트, 그 아래 날짜(8/13 형식).
+
+     0%인 날은 막대를 그리지 않는다.
+
+   - 2열 카드: 왼쪽 "이번 주 달성률" (연하늘) / 오른쪽 "8월 달성률" (연노랑)
+
+     각각 원형 도넛 링 안에 큰 퍼센트 숫자, 아래에 "총 12 / 12 완료" 형태.
+
+     왼쪽 카드에는 제목 아래에 "▲ 이전 7일보다 73%"를 초록색으로,
+
+     오른쪽 카드에는 "매달 새롭게 시작해요"를 연한 글씨로 넣는다.
+
+3. 캘린더
+
+   - 월 그리드. 위에 "< 2026년 8월 >" 이동 화살표.
+
+   - 날짜 아래에 원형 링 + 퍼센트 숫자(예: 75%, 100%).
+
+     기록 없는 날은 링 없이 "-" 만 표시. 0%는 회색 빈 링.
+
+   - 오늘 날짜는 숫자를 굵고 진하게.
+
+   - 그리드 아래: 선택한 날짜("8월 19일 (수)") + "리스트 관리" + "3 / 3 완료",
+
+     그 아래 그날 할 일 목록.
+
+4. 보상
+
+   - 인사말 카드(연분홍) + 마스코트 자리
+
+   - "내 컬렉션 모두 보기" 한 줄 버튼
+
+   - "획득한 배지" 카드: 배지 그리드(2~3열). 각 배지는 이미지 자리(원형) + 이름.
+
+   - "획득한 트로피" 카드: 아직 없으면 회색 트로피 아이콘과 안내 문구.
+
+[중요]
+
+- 첨부 이미지 속 햄스터 마스코트와 배지 그림을 따라 그리지 말 것.
+
+  마스코트와 배지는 원형 회색 placeholder로 자리만 잡을 것.
+
+  이모지나 AI 생성 이미지로 대체하지 말 것.
+
+- 첨부 이미지에서 마스코트 뒤에 보이는 격자무늬는 투명 배경 표시일 뿐이다.
+
+  실제 디자인이 아니므로 재현하지 말 것.
+
+- 상단 안드로이드 상태바(시간, 배터리)와 하단 내비게이션 바는 앱의 일부가 아니다. 만들지 말 것.
+
+- mock 데이터는 src/mockData.ts 한 파일에 모을 것.
+
+- 지금 만들지 말 것: 로그인, 회원가입, 온보딩, 푸시 알림, 화면 전환 애니메이션,
+
+  설정 화면 내부, 리스트 관리 화면, 컬렉션 화면.
+
+위 4개 화면과 탭 이동까지만 만들어줘.
 
 This project was built with [Lovable](https://lovable.dev).
 
 ## Build with Lovable
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/d7e20bd2-6b29-46d5-9d11-8248bfc5989c).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
@@ -20,10 +184,3 @@ cd <repository-name>
 npm i
 npm run dev
 ```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS

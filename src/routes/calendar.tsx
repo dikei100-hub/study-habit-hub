@@ -63,10 +63,22 @@ function CalendarScreen() {
   const { today, tasksFor, statsFor, toggleTodo, removeTodo, ensureDate, canManage } = useStudy();
   const [sheetOpen, setSheetOpen] = useState(false);
   const todayDate = parseDateKey(today);
-  const year = todayDate.getFullYear();
-  const month = todayDate.getMonth() + 1;
-  const todayDay = todayDate.getDate();
+  const [view, setView] = useState({
+    year: todayDate.getFullYear(),
+    month: todayDate.getMonth() + 1,
+  });
+  const { year, month } = view;
   const [selected, setSelected] = useState(today);
+
+  /** delta 만큼 달을 옮기고, 그 달에 오늘이 있으면 오늘을, 없으면 1일을 고른다. */
+  const shiftMonth = (delta: number) => {
+    const m = view.month - 1 + delta;
+    const next = { year: view.year + Math.floor(m / 12), month: (((m % 12) + 12) % 12) + 1 };
+    const first = makeDateKey(next.year, next.month, 1);
+    setView(next);
+    setSelected(first.slice(0, 7) === today.slice(0, 7) ? today : first);
+  };
+
   const firstWeekday = new Date(year, month - 1, 1).getDay();
   const daysInMonth = new Date(year, month, 0).getDate();
   const cells: (number | null)[] = [
@@ -85,13 +97,23 @@ function CalendarScreen() {
     <Screen>
       <Card className="mb-6">
         <div className="flex items-center justify-between">
-          <button type="button" aria-label="이전 달" className="p-1 text-muted-foreground">
+          <button
+            type="button"
+            aria-label="이전 달"
+            onClick={() => shiftMonth(-1)}
+            className="p-1 text-muted-foreground"
+          >
             <ChevronLeft size={22} />
           </button>
           <span className="text-lg font-extrabold text-foreground">
             {year}년 {month}월
           </span>
-          <button type="button" aria-label="다음 달" className="p-1 text-muted-foreground">
+          <button
+            type="button"
+            aria-label="다음 달"
+            onClick={() => shiftMonth(1)}
+            className="p-1 text-muted-foreground"
+          >
             <ChevronRight size={22} />
           </button>
         </div>
@@ -117,7 +139,7 @@ function CalendarScreen() {
                     className="flex flex-col items-center gap-1"
                   >
                     <span
-                      className={`text-sm ${day === todayDay ? "text-base font-extrabold text-purple" : "text-foreground"}`}
+                      className={`text-sm ${key === today ? "text-base font-extrabold text-purple" : "text-foreground"}`}
                     >
                       {day}
                     </span>

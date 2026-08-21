@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Working docs
+
+- `docs/orders/YYYY-MM-DD-<title>.md` — work orders the user writes. **Read-only: never edit them.** If you disagree with one, report it instead of changing it.
+- `docs/sessions/YYYY-MM-DD.md` — where you record results. Append to the day's file rather than creating a new one.
+
 ## Commands
 
 ```sh

@@ -1,5 +1,5 @@
 import { calendarMonth, monthRecords, todayTasks, type Task } from "@/mockData";
-import { makeDateKey } from "@/lib/studyDay";
+import { addDays, getStudyDate } from "@/lib/studyDay";
 
 export type TodosByDate = Record<string, Task[]>;
 export type TemplateItem = { id: string; title: string; enabled: boolean; sortOrder: number };
@@ -23,14 +23,17 @@ function tasksForRate(dateKey: string, rate: number): Task[] {
 }
 
 export function createSeedTodos(): TodosByDate {
+  const today = getStudyDate(new Date());
   const todos: TodosByDate = {};
+
+  // monthRecords 의 키는 calendarMonth.today 기준 상대 위치로 읽는다.
+  // 고정 날짜가 아니라 오늘에서 같은 간격만큼 떨어진 날에 기록을 깐다.
   for (const [day, rate] of Object.entries(monthRecords)) {
-    const key = makeDateKey(calendarMonth.year, calendarMonth.month, Number(day));
+    const key = addDays(today, Number(day) - calendarMonth.today);
     todos[key] = tasksForRate(key, rate);
   }
 
-  const seededToday = makeDateKey(calendarMonth.year, calendarMonth.month, calendarMonth.today);
-  todos[seededToday] = todayTasks.map((t) => ({ ...t }));
+  todos[today] = todayTasks.map((t) => ({ ...t }));
   return todos;
 }
 

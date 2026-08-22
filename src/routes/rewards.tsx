@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { ChevronRight, Coins, Trophy as TrophyIcon } from "lucide-react";
+import { BadgeDetailSheet } from "@/components/app/BadgeDetailSheet";
 import { CollectionSheet } from "@/components/app/CollectionSheet";
 import { Badge, Card, Mascot, Screen, Trophy } from "@/components/app/Screen";
-import { TROPHY_NAMES, TROPHY_ORDER, type TrophyId } from "@/lib/rewards";
+import { TROPHY_NAMES, TROPHY_ORDER, type BadgeProgress, type TrophyId } from "@/lib/rewards";
 import { useStudy } from "@/state/StudyStore";
 
 export const Route = createFileRoute("/rewards")({
@@ -25,6 +26,8 @@ const isTrophyId = (id: string): id is TrophyId => (TROPHY_ORDER as readonly str
 function RewardsScreen() {
   const { coins, badgeProgress, purchasedTrophies } = useStudy();
   const [collectionOpen, setCollectionOpen] = useState(false);
+  // 어느 배지를 열었는지만 기억한다. 전역 상태를 만들지 않는다.
+  const [detail, setDetail] = useState<BadgeProgress | null>(null);
   // 보상 탭은 "받은 것을 본다". 전체 12종과 조건은 컬렉션에 있다.
   const earned = badgeProgress.filter((b) => b.earned);
   const owned = purchasedTrophies.filter(isTrophyId);
@@ -66,12 +69,18 @@ function RewardsScreen() {
         ) : (
           <ul className="mt-4 grid grid-cols-2 gap-4">
             {earned.map((b) => (
-              <li
-                key={b.code}
-                className="flex flex-col items-center gap-3 rounded-[18px] bg-surface px-3 py-5"
-              >
-                <Badge code={b.code} earned size={72} />
-                <span className="text-base font-bold text-foreground">{b.name}</span>
+              <li key={b.code}>
+                {/* w-full 은 버튼이 격자 칸을 그대로 채우게 하려는 것이다.
+                    없으면 칸 크기가 달라진다. 나머지 클래스는 옮긴 그대로다. */}
+                <button
+                  type="button"
+                  aria-label={`${b.name} 자세히 보기`}
+                  onClick={() => setDetail(b)}
+                  className="flex w-full flex-col items-center gap-3 rounded-[18px] bg-surface px-3 py-5"
+                >
+                  <Badge code={b.code} earned size={72} />
+                  <span className="text-base font-bold text-foreground">{b.name}</span>
+                </button>
               </li>
             ))}
           </ul>
@@ -104,6 +113,7 @@ function RewardsScreen() {
       </Card>
 
       {collectionOpen && <CollectionSheet onClose={() => setCollectionOpen(false)} />}
+      {detail && <BadgeDetailSheet badge={detail} onClose={() => setDetail(null)} />}
     </Screen>
   );
 }

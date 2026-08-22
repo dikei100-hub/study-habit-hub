@@ -14,8 +14,10 @@ import {
   badgeProgress,
   coinBalance,
   settleRewards,
+  trophyProgress,
   type BadgeCode,
   type BadgeProgress,
+  type TrophyProgress,
 } from "@/lib/rewards";
 import {
   createInitialState,
@@ -317,6 +319,7 @@ type StudyStore = {
   justEarned: BadgeCode[];
   dismissBadgeCelebration: () => void;
   badgeProgress: BadgeProgress[];
+  trophyProgress: TrophyProgress[];
 };
 
 const StudyContext = createContext<StudyStore | null>(null);
@@ -401,6 +404,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       justEarned: state.justEarned,
       dismissBadgeCelebration: () => dispatch({ type: "dismissBadgeCelebration" }),
       badgeProgress: badgeProgress(state.rewards),
+      trophyProgress: trophyProgress(state.rewards, coinBalance(state.rewards)),
     };
   }, [state]);
 

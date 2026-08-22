@@ -14,12 +14,24 @@ import { addDays } from "@/lib/studyDay";
 /** 하루 100% 달성 시 지급액. 하루 한 번만. */
 export const COIN_PER_PERFECT_DAY = 10;
 
-/** CoreRules 8장 트로피 표. B-3 전까지 구매는 없고 잔액 계산에만 쓴다. */
+/** CoreRules 8장 트로피 표. 구매는 C-2 이고 지금은 잔액·상태 계산에만 쓴다. */
 export const TROPHY_PRICES: Record<string, number> = {
   bronze: 100,
   silver: 300,
   gold: 600,
 };
+
+/** 표시 이름. 가격 바로 옆에 두어 둘이 어긋나지 않게 한다. */
+export const TROPHY_NAMES: Record<string, string> = {
+  bronze: "브론즈 트로피",
+  silver: "실버 트로피",
+  gold: "골드 트로피",
+};
+
+/** 구매 가능 순서. 이전 등급을 사야 다음을 살 수 있다(CoreRules 8장). */
+export const TROPHY_ORDER = ["bronze", "silver", "gold"] as const;
+
+export type TrophyId = (typeof TROPHY_ORDER)[number];
 
 /** CoreRules 8장의 두 축 + 누적·상점. */
 export type BadgeAxis = "habit" | "perfect" | "cumulative" | "shop";
@@ -45,6 +57,26 @@ export const BADGE_NAMES: Record<BadgeCode, string> = {
   b10: "공부왕",
   b11: "공부의 신",
   b12: "첫 트로피",
+};
+
+/**
+ * 획득 조건을 **사용자 말로** 풀어쓴 것. 안드로이드는 `완벽한 날 50일` 처럼
+ * 내부 용어를 그대로 노출해 뜻이 안 통했다(Lessons 1-3). 이름 바로 옆에 두어
+ * 이름과 조건이 어긋나지 않게 한다.
+ */
+export const BADGE_REQUIREMENTS: Record<BadgeCode, string> = {
+  b01: "하루 할 일 모두 완료",
+  b02: "3일 연속 공부",
+  b03: "공부한 날 7일",
+  b04: "공부한 날 30일",
+  b05: "공부한 날 100일",
+  b06: "7일 연속 모두 완료",
+  b07: "모두 완료한 날 50일",
+  b08: "할 일 100개 완료",
+  b09: "할 일 300개 완료",
+  b10: "할 일 500개 완료",
+  b11: "하루 5개 이상 한 날 100일",
+  b12: "트로피 첫 구매",
 };
 
 /** 날짜별 기록에서 뽑는 집계. today 보다 뒤인 날짜는 들어가지 않는다. */
@@ -193,6 +225,7 @@ export function coinBalance(rewards: RewardsState): number {
 export type BadgeProgress = {
   code: BadgeCode;
   name: string;
+  requirement: string;
   axis: BadgeAxis;
   earned: boolean;
   date: string | null;
@@ -204,8 +237,40 @@ export function badgeProgress(rewards: RewardsState): BadgeProgress[] {
   return BADGES.map((b) => ({
     code: b.code,
     name: BADGE_NAMES[b.code],
+    requirement: BADGE_REQUIREMENTS[b.code],
     axis: b.axis,
     earned: earnedAt.has(b.code),
     date: earnedAt.get(b.code) ?? null,
   }));
+}
+
+export type TrophyProgress = {
+  id: TrophyId;
+  name: string;
+  price: number;
+  owned: boolean;
+  /** 이전 등급을 아직 안 샀을 때 그 트로피의 이름. 살 수 있으면 null. */
+  blockedBy: string | null;
+  affordable: boolean;
+};
+
+/**
+ * 트로피 셋의 표시 상태. **판정만 한다** — 구매는 C-2 이고 여기서 상태를
+ * 바꾸지 않는다. 문구 우선순위는 blockedBy 가 affordable 보다 앞선다:
+ * 이전 등급이 없으면 코인이 얼마든 못 산다.
+ */
+export function trophyProgress(rewards: RewardsState, coins: number): TrophyProgress[] {
+  const owned = new Set(rewards.purchasedTrophies);
+  return TROPHY_ORDER.map((id, i) => {
+    const prev = TROPHY_ORDER[i - 1];
+    const price = TROPHY_PRICES[id] ?? 0;
+    return {
+      id,
+      name: TROPHY_NAMES[id] ?? id,
+      price,
+      owned: owned.has(id),
+      blockedBy: prev !== undefined && !owned.has(prev) ? (TROPHY_NAMES[prev] ?? prev) : null,
+      affordable: coins >= price,
+    };
+  });
 }

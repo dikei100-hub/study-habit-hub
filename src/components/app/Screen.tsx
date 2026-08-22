@@ -1,7 +1,7 @@
 import { Settings } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
-import { BadgeCelebration } from "@/components/app/BadgeCelebration";
+import { RewardCelebration } from "@/components/app/RewardCelebration";
 import { SettingsSheet } from "@/components/app/SettingsSheet";
 import type { BadgeCode } from "@/lib/rewards";
 import { useStudy } from "@/state/StudyStore";
@@ -32,7 +32,7 @@ export function Screen({ children }: { children: ReactNode }) {
       </div>
       {settingsOpen && <SettingsSheet onClose={() => setSettingsOpen(false)} />}
       {justEarned.length > 0 && (
-        <BadgeCelebration items={justEarned} onClose={dismissCelebration} />
+        <RewardCelebration items={justEarned} onClose={dismissCelebration} />
       )}
     </div>
   );

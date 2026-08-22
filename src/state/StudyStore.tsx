@@ -9,7 +9,14 @@ import {
 import type { Task } from "@/mockData";
 import type { TemplateItem, TodosByDate } from "@/lib/seed";
 import { fillFromTemplate, todoIdFor } from "@/lib/seed";
-import { createInitialState, loadState, saveState, type PersistedState } from "@/lib/storage";
+import { badgeProgress, coinBalance, settleRewards, type BadgeProgress } from "@/lib/rewards";
+import {
+  createInitialState,
+  loadState,
+  saveState,
+  type EarnedBadge,
+  type PersistedState,
+} from "@/lib/storage";
 import { addDays, getStudyDate, monthKeys, parseDateKey, weekKeys } from "@/lib/studyDay";
 
 type Action =
@@ -31,7 +38,7 @@ function materialize(state: PersistedState, date: string): PersistedState {
   return next === state.todosByDate ? state : { ...state, todosByDate: next };
 }
 
-function reducer(state: PersistedState, action: Action): PersistedState {
+function baseReducer(state: PersistedState, action: Action): PersistedState {
   switch (action.type) {
     case "hydrate":
       return action.state;
@@ -122,6 +129,29 @@ function reducer(state: PersistedState, action: Action): PersistedState {
     default:
       return state;
   }
+}
+
+/**
+ * 보상 정산. **리듀서 안에서** 한다 — 별도 이펙트로 빼면 이중 실행 위험이 있다.
+ * 리듀서는 단일 스레드라 한 액션 안이면 그 자체로 원자적이다.
+ *
+ * CoreRules 8장 정산 순서는 코인 → 스트릭 → 배지다. 스트릭은 저장하지 않고
+ * 매번 재계산하므로, 여기서 갱신된 기록으로 먼저 구해 배지 판정에 넘긴다.
+ */
+function settle(state: PersistedState): PersistedState {
+  const today = getStudyDate(new Date());
+  const best = streakFor(state.todosByDate, today).best;
+  const rewards = settleRewards(state.todosByDate, state.rewards, today, best);
+  return rewards === state.rewards ? state : { ...state, rewards };
+}
+
+/**
+ * 상태가 바뀐 액션 뒤에는 항상 정산을 통과시킨다. hydrate 도 마찬가지다 —
+ * 앱을 며칠 만에 열었을 때 그동안의 기록이 소급 판정되어야 한다.
+ */
+function reducer(state: PersistedState, action: Action): PersistedState {
+  const next = baseReducer(state, action);
+  return next === state ? state : settle(next);
 }
 
 export type DayStats = { done: number; total: number; rate: number; hasRecord: boolean };
@@ -247,6 +277,10 @@ type StudyStore = {
   monthStats: { done: number; total: number; rate: number };
   monthLabel: string;
   streak: { current: number; best: number };
+  // 보상 셀렉터. 화면 연결은 B-2 에서 한다.
+  coins: number;
+  earnedBadges: EarnedBadge[];
+  badgeProgress: BadgeProgress[];
 };
 
 const StudyContext = createContext<StudyStore | null>(null);
@@ -322,6 +356,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       // 화면이 날짜를 직접 계산하지 않게 여기서 만든다. (CoreRules 1장)
       monthLabel: `${parseDateKey(today).getMonth() + 1}월 달성률`,
       streak: streakFor(todos, today),
+      coins: coinBalance(state.rewards),
+      earnedBadges: state.rewards.earnedBadges,
+      badgeProgress: badgeProgress(state.rewards),
     };
   }, [state]);
 

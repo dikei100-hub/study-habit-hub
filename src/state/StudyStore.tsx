@@ -146,6 +146,59 @@ function rangeStats(todos: TodosByDate, keys: string[]) {
   return { done, total, rate: total ? Math.round((done / total) * 100) : 0 };
 }
 
+/**
+ * 스트릭이 하루에 인정되는가. **판정은 여기 한 곳뿐이다.**
+ *
+ * 완료 개수 ≥ 1 이면 인정한다. 그날 예정 개수와 무관하다 — 3개 중 1개만 해도
+ * 인정. `statsFor` 가 기록 없는 날·빈 목록·total 0 을 모두 `done: 0` 으로
+ * 돌려주므로 이 한 줄이 그 경우들까지 걸러낸다. (CoreRules 8장)
+ *
+ * 프리즈(방어된 날)를 붙일 때도 이 함수만 고치면 된다. 웹은 아직 미구현.
+ */
+function isStreakDay(todos: TodosByDate, date: string): boolean {
+  return statsFor(todos, date).done >= 1;
+}
+
+/** 무한 방지 상한. 11년치라 여기 닿았다는 것 자체가 이상 상황이다. */
+const STREAK_SCAN_LIMIT = 400;
+
+/**
+ * 연속 기록. 저장하지 않고 매번 기록에서 재계산한다.
+ *
+ * today 를 인자로 받는 이유: 시작점 유예가 "오늘"에 걸리는 규칙이라
+ * 실제 시계에 의존하면 오늘 상태 하나만 확인하게 된다.
+ */
+export function streakFor(todos: TodosByDate, today: string): { current: number; best: number } {
+  // 시작점 유예: 오늘이 아직 조건을 못 채웠으면 오늘을 실패로 세지 않고
+  // 어제부터 센다. 진행 중인 하루를 끊김으로 처리하지 않기 위함.
+  // 유예는 오늘 하루에만 준다. 시작점을 정한 뒤로는 예외 없이 과거로 센다.
+  const start = isStreakDay(todos, today) ? today : addDays(today, -1);
+
+  let current = 0;
+  for (let i = 0; i < STREAK_SCAN_LIMIT; i += 1) {
+    if (!isStreakDay(todos, addDays(start, -i))) break;
+    current += 1;
+  }
+
+  const recorded = Object.keys(todos).sort();
+  let best = 0;
+  let run = 0;
+  let prev: string | null = null;
+  for (const key of recorded) {
+    const consecutive = prev !== null && addDays(prev, 1) === key;
+    if (isStreakDay(todos, key)) {
+      run = consecutive && run > 0 ? run + 1 : 1;
+      best = Math.max(best, run);
+    } else {
+      run = 0;
+    }
+    prev = key;
+  }
+
+  // 최고 기록은 줄어들지 않는다.
+  return { current, best: Math.max(best, current) };
+}
+
 export type WeekDiff = { value: number; kind: "up" | "down" | "same" | "none" };
 
 /**
@@ -216,29 +269,6 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       return { date, rate: statsFor(todos, date).rate };
     });
 
-    let current = 0;
-    for (let i = 0; ; i += 1) {
-      const s = statsFor(todos, addDays(today, -i));
-      if (!s.hasRecord || s.total === 0 || s.rate < 100) break;
-      current += 1;
-    }
-
-    const recorded = Object.keys(todos).sort();
-    let best = 0;
-    let run = 0;
-    let prev: string | null = null;
-    for (const key of recorded) {
-      const s = statsFor(todos, key);
-      const consecutive = prev !== null && addDays(prev, 1) === key;
-      if (s.total > 0 && s.rate === 100) {
-        run = consecutive && run > 0 ? run + 1 : 1;
-        best = Math.max(best, run);
-      } else {
-        run = 0;
-      }
-      prev = key;
-    }
-
     const canToggle = (date: string) => date === today;
     const canManage = (date: string) => date >= today;
 
@@ -289,7 +319,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       monthStats: rangeStats(todos, monthKeys(today)),
       // 화면이 날짜를 직접 계산하지 않게 여기서 만든다. (CoreRules 1장)
       monthLabel: `${parseDateKey(today).getMonth() + 1}월 달성률`,
-      streak: { current, best: Math.max(best, current) },
+      streak: streakFor(todos, today),
     };
   }, [state]);
 

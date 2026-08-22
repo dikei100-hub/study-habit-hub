@@ -1,7 +1,11 @@
 import { Settings } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+
+import { SettingsSheet } from "@/components/app/SettingsSheet";
 
 export function Screen({ children }: { children: ReactNode }) {
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-background">
       <div
@@ -12,6 +16,7 @@ export function Screen({ children }: { children: ReactNode }) {
           <button
             type="button"
             aria-label="설정"
+            onClick={() => setSettingsOpen(true)}
             className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-lilac"
           >
             <Settings size={22} />
@@ -19,6 +24,7 @@ export function Screen({ children }: { children: ReactNode }) {
         </div>
         {children}
       </div>
+      {settingsOpen && <SettingsSheet onClose={() => setSettingsOpen(false)} />}
     </div>
   );
 }

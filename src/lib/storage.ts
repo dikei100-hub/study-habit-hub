@@ -73,3 +73,16 @@ export function saveState(state: PersistedState): void {
     /* 저장 실패는 무시 */
   }
 }
+
+/**
+ * 저장된 상태를 지운다. 설정 시트의 "데이터 초기화" 가 부른다.
+ * 옛 v1 키는 건드리지 않고 현재 키만 지운다.
+ */
+export function clearState(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* 삭제 실패는 무시 */
+  }
+}

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { CalendarDays, Check, Trash2 } from "lucide-react";
 import { Card, Mascot, Screen, type MascotKind } from "@/components/app/Screen";
 import { ListSheet } from "@/components/app/ListSheet";
@@ -37,15 +37,11 @@ export const todayStages: { kind: MascotKind; title: string; sub: string }[] = [
 export const stageIndexFor = (rate: number): number => (rate === 100 ? 2 : rate > 0 ? 1 : 0);
 
 function TodayScreen() {
-  const { today, tasksFor, statsFor, toggleTodo, removeTodo, streak, ensureDate } = useStudy();
+  const { today, tasksFor, statsFor, toggleTodo, removeTodo, streak } = useStudy();
   const [sheetOpen, setSheetOpen] = useState(false);
   const tasks = tasksFor(today) ?? [];
   const { done, rate } = statsFor(today);
   const stage = todayStages[stageIndexFor(rate)]!;
-
-  useEffect(() => {
-    ensureDate(today);
-  }, [today, ensureDate]);
 
   return (
     <Screen>

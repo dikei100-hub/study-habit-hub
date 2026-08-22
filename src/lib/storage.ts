@@ -1,6 +1,5 @@
 import type { TemplateItem, TodosByDate } from "@/lib/seed";
-import { createSeedTemplates, createSeedTodos, fillFromTemplate } from "@/lib/seed";
-import { getStudyDate } from "@/lib/studyDay";
+import { createSeedTemplates, createSeedTodos } from "@/lib/seed";
 
 // v2: 템플릿에서 on/off 플래그를 없앴다(CoreRules 2장 재정의). 마이그레이션은
 // 두지 않고 v1 키는 지우지 않은 채 남겨 둔다.
@@ -91,9 +90,11 @@ function normalizeRewards(value: unknown): RewardsState {
 }
 
 export function createInitialState(): PersistedState {
-  const templates = createSeedTemplates();
-  const todosByDate = fillFromTemplate(createSeedTodos(), getStudyDate(new Date()), templates);
-  return { todosByDate, templates, rewards: createEmptyRewards() };
+  return {
+    todosByDate: createSeedTodos(),
+    templates: createSeedTemplates(),
+    rewards: createEmptyRewards(),
+  };
 }
 
 /** 저장된 상태를 읽는다. 없거나 깨졌으면 초기값. */
@@ -105,9 +106,10 @@ export function loadState(): PersistedState {
     const parsed: unknown = JSON.parse(raw);
     if (!isValid(parsed)) return createInitialState();
     const templates = normalizeTemplates((parsed as PersistedState).templates);
+    // 저장된 것을 그대로 돌려준다. 자동으로 채우지 않는다(CoreRules 5장).
     return {
       templates,
-      todosByDate: fillFromTemplate(parsed.todosByDate, getStudyDate(new Date()), templates),
+      todosByDate: parsed.todosByDate,
       rewards: normalizeRewards(parsed.rewards),
     };
   } catch {

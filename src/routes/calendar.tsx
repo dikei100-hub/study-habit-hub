@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ChevronLeft, ChevronRight, Check, Trash2 } from "lucide-react";
 import { Card, Screen } from "@/components/app/Screen";
 import { ListSheet } from "@/components/app/ListSheet";
@@ -137,8 +137,7 @@ function TaskRow({
 }
 
 function CalendarScreen() {
-  const { today, previewFor, statsFor, toggleTodo, removeTodo, ensureDate, canToggle, canManage } =
-    useStudy();
+  const { today, previewFor, statsFor, toggleTodo, removeTodo, canToggle, canManage } = useStudy();
   const [sheetOpen, setSheetOpen] = useState(false);
   const todayDate = parseDateKey(today);
   const [view, setView] = useState({
@@ -167,10 +166,6 @@ function CalendarScreen() {
   // 미래 날짜는 미리보기만 보여준다. 저장은 사용자가 실제로 편집할 때 일어난다.
   const selectedTasks = previewFor(selected);
   const selectedDone = selectedTasks.filter((t) => t.done).length;
-
-  useEffect(() => {
-    if (selected === today) ensureDate(selected);
-  }, [selected, today, ensureDate]);
 
   return (
     <Screen>

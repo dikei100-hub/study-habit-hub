@@ -8,7 +8,7 @@ import {
 } from "react";
 import type { Task } from "@/mockData";
 import type { TemplateItem, TodosByDate } from "@/lib/seed";
-import { fillFromTemplate, todoIdFor } from "@/lib/seed";
+import { todoIdFor } from "@/lib/seed";
 import {
   BADGE_NAMES,
   badgeProgress,
@@ -38,20 +38,22 @@ type Action =
   | { type: "hydrate"; state: PersistedState }
   | { type: "dismissBadgeCelebration" }
   | { type: "toggleTodo"; date: string; id: string }
-  | { type: "ensureDate"; date: string }
   | { type: "addTemplate"; date: string; title: string }
   | { type: "setTemplateOnDate"; date: string; id: string; on: boolean }
   | { type: "removeTemplate"; date: string; id: string }
   | { type: "removeTodo"; date: string; id: string };
 
 /**
- * 그 날짜의 할 일을 실제로 만든다(없을 때만).
- * 미래 날짜는 둘러보기만으로 만들지 않는다. 사용자가 실제로 편집할 때
- * 이 시점에 만들어야 통계와 달력에 계획한 적 없는 0% 기록이 남지 않는다.
+ * 그 날짜의 **빈 목록**을 만든다(키가 없을 때만).
+ *
+ * 템플릿을 깔지 않는다. 어떤 날짜도 자동으로 채우지 않는 것이 규칙이고
+ * (CoreRules 5장), 담기는 것은 리스트 관리에서 체크한 것뿐이다.
+ * 편집 액션들이 이것을 먼저 부르므로, 그 날짜를 처음 건드리는 순간 빈 목록이
+ * 생기고 거기에 담긴다. 둘러보기만으로는 아무것도 생기지 않는다.
  */
 function materialize(state: StoreState, date: string): StoreState {
-  const next = fillFromTemplate(state.todosByDate, date, state.templates);
-  return next === state.todosByDate ? state : { ...state, todosByDate: next };
+  if (date in state.todosByDate) return state;
+  return { ...state, todosByDate: { ...state.todosByDate, [date]: [] } };
 }
 
 function baseReducer(state: StoreState, action: Action): StoreState {
@@ -72,8 +74,6 @@ function baseReducer(state: StoreState, action: Action): StoreState {
         },
       };
     }
-    case "ensureDate":
-      return materialize(state, action.date);
     case "addTemplate": {
       const title = action.title.trim();
       if (!title) return state;
@@ -194,9 +194,9 @@ export type DayStats = { done: number; total: number; rate: number; hasRecord: b
 function statsFor(todos: TodosByDate, date: string): DayStats {
   const list = todos[date];
   // 묻는 것은 "화면에 보여줄 기록이 있나" 이므로 빈 배열은 false 다.
-  // fillFromTemplate 은 "만든 적이 있나" 를 키 존재로 묻는다. 기준이 다른 것이
-  // 의도다. 그래야 사용자가 비운 날은 다시 깔리지 않으면서 달력에는 0% 링 대신
-  // `-` 가 뜨고 스트릭도 그날에서 끊긴다. 통일하지 말 것.
+  // materialize 는 "이 날짜를 건드린 적이 있나" 를 키 존재로 묻는다. 기준이
+  // 다른 것이 의도다. 그래야 담은 것이 없는 날은 달력에 0% 링 대신 `-` 가 뜨고
+  // 스트릭도 그날에서 끊긴다. 통일하지 말 것.
   if (!list || list.length === 0) return { done: 0, total: 0, rate: 0, hasRecord: false };
   const done = list.filter((t) => t.done).length;
   return { done, total: list.length, rate: Math.round((done / list.length) * 100), hasRecord: true };
@@ -295,7 +295,6 @@ type StudyStore = {
   todosByDate: TodosByDate;
   templates: TemplateItem[];
   toggleTodo: (date: string, id: string) => void;
-  ensureDate: (date: string) => void;
   addTemplate: (date: string, title: string) => void;
   setTemplateOnDate: (date: string, id: string, on: boolean) => void;
   removeTemplate: (date: string, id: string) => void;
@@ -358,7 +357,6 @@ export function StudyProvider({ children }: { children: ReactNode }) {
         if (!canToggle(date)) return;
         dispatch({ type: "toggleTodo", date, id });
       },
-      ensureDate: (date) => dispatch({ type: "ensureDate", date }),
       addTemplate: (date, title) => {
         if (!canManage(date)) return;
         dispatch({ type: "addTemplate", date, title });
@@ -378,18 +376,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       canToggle,
       canManage,
       tasksFor: (date) => todos[date],
-      // 저장된 목록이 있으면 그것, 없으면 템플릿으로 만든 미리보기.
-      // 미리보기는 저장되지 않는다. 기록이 없는 과거 날짜는 빈 목록이다.
-      previewFor: (date) =>
-        todos[date] ??
-        (canManage(date) ? (fillFromTemplate({}, date, state.templates)[date] ?? []) : []),
+      // 저장된 목록만 본다. 담지 않은 날짜는 빈 목록이다 — 미리보기를 만들지
+      // 않는 것이 규칙이다(CoreRules 5장).
+      previewFor: (date) => todos[date] ?? [],
       // 체크박스가 읽는 유일한 판정. 시트가 직접 계산하지 않게 여기 둔다.
-      isTemplateOn: (date, id) => {
-        const list =
-          todos[date] ??
-          (canManage(date) ? (fillFromTemplate({}, date, state.templates)[date] ?? []) : []);
-        return list.some((t) => t.id === todoIdFor(date, id));
-      },
+      // 담지 않은 날짜에서는 전부 꺼진 상태로 보인다.
+      isTemplateOn: (date, id) => (todos[date] ?? []).some((t) => t.id === todoIdFor(date, id)),
       statsFor: (date) => statsFor(todos, date),
       last7Days: last7,
       weekStats: rangeStats(todos, weekKeys(today)),

@@ -16,6 +16,28 @@ export const Route = createFileRoute("/stats")({
   component: StatsScreen,
 });
 
+/**
+ * 막대 한 칸. **세 갈래**로 그린다.
+ *
+ * 기록이 없는 날(앱을 안 연 날)과 담았는데 하나도 못 한 날은 다른 상태다.
+ * `d.rate > 0` 만 보면 둘이 똑같이 빈 자리로 보여, 캘린더가 `-` 와 `0%` 로
+ * 가르는 것과 두 화면의 답이 어긋난다.
+ *
+ * 0% 막대는 바닥에 붙은 얇은 선이다. 높이를 아주 낮게 두고 흐린 색을 써서
+ * 1% 이상과 헷갈리지 않게 한다 — "담았는데 아직 못 했다" 가 읽히면 된다.
+ */
+function DayBar({ rate, hasRecord }: { rate: number; hasRecord: boolean }) {
+  return (
+    <div className="flex h-32 w-full items-end justify-center">
+      {rate > 0 ? (
+        <div className="w-4 rounded-full bg-purple" style={{ height: `${Math.max(rate, 8)}%` }} />
+      ) : hasRecord ? (
+        <div className="h-1 w-4 rounded-full bg-purple-soft" />
+      ) : null}
+    </div>
+  );
+}
+
 function StatsScreen() {
   const { last7Days, weekStats, weekDiff, monthStats, monthLabel, streak } = useStudy();
   const diffText = {
@@ -50,14 +72,7 @@ function StatsScreen() {
         <div className="mt-5 flex items-end justify-between gap-2">
           {last7Days.map((d) => (
             <div key={d.date} className="flex flex-1 flex-col items-center">
-              <div className="flex h-32 w-full items-end justify-center">
-                {d.rate > 0 && (
-                  <div
-                    className="w-4 rounded-full bg-purple"
-                    style={{ height: `${Math.max(d.rate, 8)}%` }}
-                  />
-                )}
-              </div>
+              <DayBar rate={d.rate} hasRecord={d.hasRecord} />
               <span className="mt-2 text-xs text-muted-foreground">{d.rate}%</span>
               <span className="mt-1 text-xs text-muted-foreground">{shortLabel(d.date)}</span>
             </div>

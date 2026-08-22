@@ -349,7 +349,7 @@ type StudyStore = {
   previewFor: (date: string) => Task[];
   isTemplateOn: (date: string, id: string) => boolean;
   statsFor: (date: string) => DayStats;
-  last7Days: { date: string; rate: number }[];
+  last7Days: { date: string; rate: number; hasRecord: boolean }[];
   weekStats: { done: number; total: number; rate: number };
   weekDiff: WeekDiff;
   monthStats: { done: number; total: number; rate: number };
@@ -388,7 +388,11 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
     const last7 = Array.from({ length: 7 }, (_, i) => {
       const date = addDays(today, i - 6);
-      return { date, rate: statsFor(todos, date).rate };
+      // hasRecord 를 버리지 않는다. 담았는데 하나도 못 한 날과 앱을 안 연 날은
+      // 다른 상태이고, 캘린더는 이미 `-` 로 가른다. 새로 계산하지 않고
+      // statsFor 가 돌려주는 값을 그대로 싣는다.
+      const { rate, hasRecord } = statsFor(todos, date);
+      return { date, rate, hasRecord };
     });
 
     const canToggle = (date: string) => date === today;

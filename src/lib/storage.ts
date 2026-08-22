@@ -4,9 +4,29 @@ import { getStudyDate } from "@/lib/studyDay";
 
 // v2: 템플릿에서 on/off 플래그를 없앴다(CoreRules 2장 재정의). 마이그레이션은
 // 두지 않고 v1 키는 지우지 않은 채 남겨 둔다.
+// rewards 를 붙이면서도 키를 올리지 않았다. isValid 가 todosByDate 만 보고
+// rewards 는 templates 처럼 따로 정규화하므로 옛 payload 가 그대로 살아남는다.
 const STORAGE_KEY = "studymate.state.v2";
 
-export type PersistedState = { todosByDate: TodosByDate; templates: TemplateItem[] };
+/** 획득한 배지와 획득일. code 는 b01 같은 의미 중립 코드다(CoreRules 8장). */
+export type EarnedBadge = { code: string; date: string };
+
+export type RewardsState = {
+  earnedBadges: EarnedBadge[];
+  /** 코인을 지급한 날짜. 여기서 빠지는 일은 없다 — 회수하지 않는다. */
+  coinAwardedDates: string[];
+  purchasedTrophies: string[];
+};
+
+export type PersistedState = {
+  todosByDate: TodosByDate;
+  templates: TemplateItem[];
+  rewards: RewardsState;
+};
+
+export function createEmptyRewards(): RewardsState {
+  return { earnedBadges: [], coinAwardedDates: [], purchasedTrophies: [] };
+}
 
 function isValid(value: unknown): value is PersistedState {
   if (!value || typeof value !== "object") return false;
@@ -41,10 +61,39 @@ function normalizeTemplates(value: unknown): TemplateItem[] {
   }));
 }
 
+function normalizeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((v): v is string => typeof v === "string");
+}
+
+function normalizeEarnedBadges(value: unknown): EarnedBadge[] {
+  if (!Array.isArray(value)) return [];
+  const items = value.filter(
+    (b): b is EarnedBadge =>
+      !!b && typeof b === "object" && typeof b.code === "string" && typeof b.date === "string",
+  );
+  // normalizeTemplates 와 같은 이유로 스프레드하지 않고 필요한 필드만 뽑는다.
+  return items.map((b) => ({ code: b.code, date: b.date }));
+}
+
+/**
+ * 없거나 깨졌으면 빈 보상 상태. templates 와 달리 시드가 없다 —
+ * 보상은 기록에서 소급 판정되므로 빈 값에서 시작해도 잃는 것이 없다.
+ */
+function normalizeRewards(value: unknown): RewardsState {
+  if (!value || typeof value !== "object") return createEmptyRewards();
+  const raw = value as Record<string, unknown>;
+  return {
+    earnedBadges: normalizeEarnedBadges(raw["earnedBadges"]),
+    coinAwardedDates: normalizeStringArray(raw["coinAwardedDates"]),
+    purchasedTrophies: normalizeStringArray(raw["purchasedTrophies"]),
+  };
+}
+
 export function createInitialState(): PersistedState {
   const templates = createSeedTemplates();
   const todosByDate = fillFromTemplate(createSeedTodos(), getStudyDate(new Date()), templates);
-  return { todosByDate, templates };
+  return { todosByDate, templates, rewards: createEmptyRewards() };
 }
 
 /** 저장된 상태를 읽는다. 없거나 깨졌으면 초기값. */
@@ -59,6 +108,7 @@ export function loadState(): PersistedState {
     return {
       templates,
       todosByDate: fillFromTemplate(parsed.todosByDate, getStudyDate(new Date()), templates),
+      rewards: normalizeRewards(parsed.rewards),
     };
   } catch {
     return createInitialState();

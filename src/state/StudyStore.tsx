@@ -58,6 +58,7 @@ function reducer(state: PersistedState, action: Action): PersistedState {
       const sortOrder = s.templates.reduce((min, t) => Math.min(min, t.sortOrder), 0) - 1;
       const list = s.todosByDate[action.date] ?? [];
       return {
+        ...s,
         templates: [{ id, title, sortOrder }, ...s.templates],
         todosByDate: {
           ...s.todosByDate,
@@ -101,6 +102,7 @@ function reducer(state: PersistedState, action: Action): PersistedState {
       const list = s.todosByDate[action.date] ?? [];
       const todoId = todoIdFor(action.date, action.id);
       return {
+        ...s,
         templates: s.templates.filter((t) => t.id !== action.id),
         todosByDate: {
           ...s.todosByDate,

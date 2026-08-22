@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { ChevronRight, Trophy as TrophyIcon } from "lucide-react";
+import { ChevronRight, Coins, Trophy as TrophyIcon } from "lucide-react";
 import { CollectionSheet } from "@/components/app/CollectionSheet";
 import { Badge, Card, Mascot, Screen, Trophy } from "@/components/app/Screen";
 import { TROPHY_NAMES, TROPHY_ORDER, type TrophyId } from "@/lib/rewards";
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/rewards")({
 const isTrophyId = (id: string): id is TrophyId => (TROPHY_ORDER as readonly string[]).includes(id);
 
 function RewardsScreen() {
-  const { badgeProgress, purchasedTrophies } = useStudy();
+  const { coins, badgeProgress, purchasedTrophies } = useStudy();
   const [collectionOpen, setCollectionOpen] = useState(false);
   // 보상 탭은 "받은 것을 본다". 전체 12종과 조건은 컬렉션에 있다.
   const earned = badgeProgress.filter((b) => b.earned);
@@ -47,7 +47,14 @@ function RewardsScreen() {
         className="mb-5 flex w-full items-center justify-between rounded-[20px] bg-lilac px-5 py-5 shadow-soft"
       >
         <span className="text-lg font-bold text-foreground">내 컬렉션 모두 보기</span>
-        <ChevronRight size={22} className="text-muted-foreground" />
+        <span className="flex items-center gap-2">
+          {/* 컬렉션 헤더의 알약과 같은 모양이다. 들어가서도 이어져 보여야 한다. */}
+          <span className="flex items-center gap-1.5 rounded-full bg-lemon px-3 py-1.5 text-base font-bold text-foreground">
+            <Coins size={16} className="text-muted-foreground" />
+            {coins}
+          </span>
+          <ChevronRight size={22} className="text-muted-foreground" />
+        </span>
       </button>
 
       <Card tone="lilac" className="mb-5">

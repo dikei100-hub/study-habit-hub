@@ -59,3 +59,26 @@ export function MascotSlot({ size = 96 }: { size?: number }) {
     />
   );
 }
+
+// 화면들이 파일 경로를 직접 쓰지 않도록 매핑은 여기 한 곳에만 둔다.
+const mascotSrc = {
+  hello: "/char_hello.png",
+  good: "/char_good.png",
+  congrats: "/char_congrats.png",
+  graduate: "/char_graduate.png",
+} as const;
+
+export type MascotKind = keyof typeof mascotSrc;
+
+export function Mascot({ kind, size = 96 }: { kind: MascotKind; size?: number }) {
+  return (
+    <div
+      aria-hidden
+      className="flex shrink-0 items-center justify-center rounded-full bg-blush"
+      style={{ width: size, height: size }}
+    >
+      {/* 원에 꽉 채우면 귀·모자가 잘린 것처럼 보여 지름의 82%로 둔다. */}
+      <img src={mascotSrc[kind]} alt="" style={{ width: size * 0.82, height: size * 0.82 }} />
+    </div>
+  );
+}

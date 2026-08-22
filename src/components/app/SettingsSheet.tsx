@@ -36,6 +36,15 @@ export function SettingsSheet({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
+        {/* 읽기만 하는 안내다. 누를 것이 없으므로 button 으로 만들지 않는다. */}
+        <div className="mb-4 rounded-[20px] bg-surface p-5 shadow-soft">
+          <p className="text-lg font-extrabold text-foreground">데이터 보관</p>
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+            할 일과 기록은 이 브라우저에만 저장돼요. 다른 기기에서는 볼 수 없고, 브라우저 데이터를
+            지우면 함께 사라져요.
+          </p>
+        </div>
+
         <div className="rounded-[20px] bg-surface p-5 shadow-soft">
           <p className="text-lg font-extrabold text-foreground">데이터 초기화</p>
           <p className="mt-1 text-sm text-muted-foreground">

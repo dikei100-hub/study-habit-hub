@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Coins, X } from "lucide-react";
 import { Badge, Trophy } from "@/components/app/Screen";
 import { useStudy } from "@/state/StudyStore";
@@ -10,7 +11,9 @@ import { useStudy } from "@/state/StudyStore";
  * 아니라 텍스트다. 눌러도 아무 일이 없는 것이 지금은 정상이다.
  */
 export function CollectionSheet({ onClose }: { onClose: () => void }) {
-  const { coins, badgeProgress, trophyProgress } = useStudy();
+  const { coins, badgeProgress, trophyProgress, purchaseTrophy } = useStudy();
+  // 한 번에 한 줄만 확인 상태가 된다. 다른 트로피를 누르면 앞의 것은 접힌다.
+  const [confirming, setConfirming] = useState<string | null>(null);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
@@ -57,22 +60,48 @@ export function CollectionSheet({ onClose }: { onClose: () => void }) {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-base font-bold text-foreground">{t.name}</p>
-                    {t.owned ? null : (
-                      <p className="mt-0.5 text-sm text-muted-foreground">
-                        {t.blockedBy !== null
-                          ? `${t.blockedBy} 먼저`
-                          : t.affordable
-                            ? `구매하기 · ${t.price}코인`
-                            : "코인 부족"}
-                      </p>
+                    {confirming === t.id && (
+                      <p className="mt-0.5 text-sm text-muted-foreground">{t.name}를 구매할까요?</p>
                     )}
                   </div>
+                  {/* 상태 표시는 오른쪽 한 자리로 모은다. 살 수 있을 때만 버튼이고
+                      나머지는 이유를 적은 회색 텍스트다. */}
                   {t.owned ? (
                     <span className="shrink-0 text-sm font-bold text-purple">획득!</span>
-                  ) : (
+                  ) : t.blockedBy !== null ? (
                     <span className="shrink-0 text-sm text-muted-foreground">
-                      구매하기 · {t.price}코인
+                      {t.blockedBy} 먼저
                     </span>
+                  ) : !t.affordable ? (
+                    <span className="shrink-0 text-sm text-muted-foreground">코인 부족</span>
+                  ) : confirming === t.id ? (
+                    <span className="flex shrink-0 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          purchaseTrophy(t.id);
+                          setConfirming(null);
+                        }}
+                        className="rounded-[20px] bg-blush px-3 py-2 text-sm font-bold text-foreground"
+                      >
+                        네, 구매할게요
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirming(null)}
+                        className="rounded-[20px] bg-muted px-3 py-2 text-sm font-bold text-muted-foreground"
+                      >
+                        취소
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirming(t.id)}
+                      className="shrink-0 rounded-[20px] bg-lemon px-3 py-2 text-sm font-bold text-foreground"
+                    >
+                      구매하기 · {t.price}코인
+                    </button>
                   )}
                 </li>
               ))}

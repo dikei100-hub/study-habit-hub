@@ -1,6 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { ChevronRight, Coins, Trophy as TrophyIcon } from "lucide-react";
-import { Badge, Card, Mascot, Screen, Trophy, type TrophyId } from "@/components/app/Screen";
+import { CollectionSheet } from "@/components/app/CollectionSheet";
+import { Badge, Card, Mascot, Screen, Trophy } from "@/components/app/Screen";
+import { TROPHY_NAMES, TROPHY_ORDER, type TrophyId } from "@/lib/rewards";
 import { useStudy } from "@/state/StudyStore";
 
 export const Route = createFileRoute("/rewards")({
@@ -15,16 +18,13 @@ export const Route = createFileRoute("/rewards")({
   component: RewardsScreen,
 });
 
-const trophyNames: Record<TrophyId, string> = {
-  bronze: "브론즈",
-  silver: "실버",
-  gold: "골드",
-};
-
-const isTrophyId = (id: string): id is TrophyId => id in trophyNames;
+// 이름은 rewards.ts 의 TROPHY_NAMES 한 곳에서만 온다. 같은 이름을 두 곳에
+// 두면 반드시 어긋난다.
+const isTrophyId = (id: string): id is TrophyId => (TROPHY_ORDER as readonly string[]).includes(id);
 
 function RewardsScreen() {
   const { coins, badgeProgress, purchasedTrophies } = useStudy();
+  const [collectionOpen, setCollectionOpen] = useState(false);
   const earnedCount = badgeProgress.filter((b) => b.earned).length;
   const owned = purchasedTrophies.filter(isTrophyId);
 
@@ -50,6 +50,7 @@ function RewardsScreen() {
 
       <button
         type="button"
+        onClick={() => setCollectionOpen(true)}
         className="mb-5 flex w-full items-center justify-between rounded-[20px] bg-lilac px-5 py-5 shadow-soft"
       >
         <span className="text-lg font-bold text-foreground">내 컬렉션 모두 보기</span>
@@ -97,12 +98,14 @@ function RewardsScreen() {
                 className="flex flex-col items-center gap-3 rounded-[18px] bg-surface px-3 py-5"
               >
                 <Trophy id={id} size={72} />
-                <span className="text-base font-bold text-foreground">{trophyNames[id]}</span>
+                <span className="text-base font-bold text-foreground">{TROPHY_NAMES[id]}</span>
               </li>
             ))}
           </ul>
         )}
       </Card>
+
+      {collectionOpen && <CollectionSheet onClose={() => setCollectionOpen(false)} />}
     </Screen>
   );
 }

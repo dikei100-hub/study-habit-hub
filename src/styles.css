@@ -32,6 +32,7 @@
   --color-task-peach: var(--task-peach);
   --color-check: var(--check);
   --color-up: var(--up);
+  --color-down: var(--down);
   --shadow-soft: var(--shadow-card);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -90,6 +91,7 @@
   --task-peach: #fbe3d0;
   --check: #34c759;
   --up: #2e9e5b;
+  --down: #d1604c;
   --shadow-card: 0 2px 10px rgba(107, 79, 168, 0.07);
   --card: oklch(1 0 0);
   --card-foreground: #4a4458;

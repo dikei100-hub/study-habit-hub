@@ -10,7 +10,7 @@ import type { Task } from "@/mockData";
 import type { TemplateItem, TodosByDate } from "@/lib/seed";
 import { fillFromTemplate, todoIdFor } from "@/lib/seed";
 import { createInitialState, loadState, saveState, type PersistedState } from "@/lib/storage";
-import { addDays, getStudyDate, monthKeys, weekKeys } from "@/lib/studyDay";
+import { addDays, getStudyDate, monthKeys, parseDateKey, weekKeys } from "@/lib/studyDay";
 
 type Action =
   | { type: "hydrate"; state: PersistedState }
@@ -146,6 +146,30 @@ function rangeStats(todos: TodosByDate, keys: string[]) {
   return { done, total, rate: total ? Math.round((done / total) * 100) : 0 };
 }
 
+export type WeekDiff = { value: number; kind: "up" | "down" | "same" | "none" };
+
+/**
+ * "이번 주 경과분 vs 지난주 같은 경과분" 의 달성률 차이.
+ *
+ * 도넛이 재는 창(일~토 달력 주간)과 같은 것을 재도록, 아직 지나지 않은 요일은
+ * 양쪽에서 모두 뺀다. 오늘이 수요일이면 이번 주 일~수 4일 vs 지난주 일~수 4일.
+ *
+ * today 를 인자로 받는 순수 함수인 이유: 주 경계(일요일=경과 1일,
+ * 토요일=경과 7일)가 틀리기 쉬운 자리라 실제 시계와 무관하게 검증해야 한다.
+ */
+export function weekDiffFor(todos: TodosByDate, today: string): WeekDiff {
+  const elapsed = weekKeys(today).filter((k) => k <= today);
+  const previous = elapsed.map((k) => addDays(k, -7));
+  const now = rangeStats(todos, elapsed);
+  const before = rangeStats(todos, previous);
+  // 한쪽이라도 기록이 없으면 비교 자체가 성립하지 않는다.
+  if (now.total === 0 || before.total === 0) return { value: 0, kind: "none" };
+  const diff = now.rate - before.rate;
+  if (diff > 0) return { value: diff, kind: "up" };
+  if (diff < 0) return { value: Math.abs(diff), kind: "down" };
+  return { value: 0, kind: "same" };
+}
+
 type StudyStore = {
   today: string;
   todosByDate: TodosByDate;
@@ -164,7 +188,9 @@ type StudyStore = {
   statsFor: (date: string) => DayStats;
   last7Days: { date: string; rate: number }[];
   weekStats: { done: number; total: number; rate: number };
+  weekDiff: WeekDiff;
   monthStats: { done: number; total: number; rate: number };
+  monthLabel: string;
   streak: { current: number; best: number };
 };
 
@@ -259,7 +285,10 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       statsFor: (date) => statsFor(todos, date),
       last7Days: last7,
       weekStats: rangeStats(todos, weekKeys(today)),
+      weekDiff: weekDiffFor(todos, today),
       monthStats: rangeStats(todos, monthKeys(today)),
+      // 화면이 날짜를 직접 계산하지 않게 여기서 만든다. (CoreRules 1장)
+      monthLabel: `${parseDateKey(today).getMonth() + 1}월 달성률`,
       streak: { current, best: Math.max(best, current) },
     };
   }, [state]);

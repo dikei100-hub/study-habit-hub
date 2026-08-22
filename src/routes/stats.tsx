@@ -10,7 +10,7 @@ export const Route = createFileRoute("/stats")({
       { title: "통계 — 공부체크" },
       { name: "description", content: "최근 7일, 이번 주, 이번 달 공부 달성률을 확인해요." },
       { property: "og:title", content: "통계 — 공부체크" },
-      { property: "og:description", content: "연속 달성과 주간·월간 달성률을 한눈에." },
+      { property: "og:description", content: "연속 공부와 주간·월간 달성률을 한눈에." },
     ],
   }),
   component: StatsScreen,
@@ -34,7 +34,7 @@ function StatsScreen() {
     <Screen>
       <div className="mb-4 grid grid-cols-2 gap-4">
         <Card tone="sky" className="flex flex-col justify-between">
-          <span className="text-lg font-bold text-foreground">연속 달성</span>
+          <span className="text-lg font-bold text-foreground">연속 공부</span>
           <span className="mt-6 text-3xl font-extrabold text-foreground">
             {streak.current}일 🔥
           </span>

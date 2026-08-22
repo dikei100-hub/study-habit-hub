@@ -75,7 +75,7 @@ function TodayScreen() {
             {done} / {tasks.length} 완료
           </span>
           <span>
-            🔥 {streak.current}일 연속 달성 중 · 최고 {streak.best}일
+            🔥 {streak.current}일 연속 공부 중 · 최고 {streak.best}일
           </span>
         </div>
       </Card>

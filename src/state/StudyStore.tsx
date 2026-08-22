@@ -9,7 +9,14 @@ import {
 import type { Task } from "@/mockData";
 import type { TemplateItem, TodosByDate } from "@/lib/seed";
 import { fillFromTemplate, todoIdFor } from "@/lib/seed";
-import { badgeProgress, coinBalance, settleRewards, type BadgeProgress } from "@/lib/rewards";
+import {
+  BADGE_NAMES,
+  badgeProgress,
+  coinBalance,
+  settleRewards,
+  type BadgeCode,
+  type BadgeProgress,
+} from "@/lib/rewards";
 import {
   createInitialState,
   loadState,
@@ -19,8 +26,15 @@ import {
 } from "@/lib/storage";
 import { addDays, getStudyDate, monthKeys, parseDateKey, weekKeys } from "@/lib/studyDay";
 
+/**
+ * 리듀서가 들고 있는 상태. `justEarned` 는 축하 팝업만 보는 **임시 값이라
+ * 저장하지 않는다** — saveState 가 세 필드만 골라 넘기므로 저장소에 새지 않는다.
+ */
+type StoreState = PersistedState & { justEarned: BadgeCode[] };
+
 type Action =
   | { type: "hydrate"; state: PersistedState }
+  | { type: "dismissBadgeCelebration" }
   | { type: "toggleTodo"; date: string; id: string }
   | { type: "ensureDate"; date: string }
   | { type: "addTemplate"; date: string; title: string }
@@ -33,15 +47,16 @@ type Action =
  * 미래 날짜는 둘러보기만으로 만들지 않는다. 사용자가 실제로 편집할 때
  * 이 시점에 만들어야 통계와 달력에 계획한 적 없는 0% 기록이 남지 않는다.
  */
-function materialize(state: PersistedState, date: string): PersistedState {
+function materialize(state: StoreState, date: string): StoreState {
   const next = fillFromTemplate(state.todosByDate, date, state.templates);
   return next === state.todosByDate ? state : { ...state, todosByDate: next };
 }
 
-function baseReducer(state: PersistedState, action: Action): PersistedState {
+function baseReducer(state: StoreState, action: Action): StoreState {
   switch (action.type) {
     case "hydrate":
-      return action.state;
+      // 저장값에는 justEarned 가 없다. 새로 연 세션은 축하 대기 없이 시작한다.
+      return { ...action.state, justEarned: [] };
     case "toggleTodo": {
       const list = state.todosByDate[action.date];
       if (!list) return state;
@@ -131,6 +146,9 @@ function baseReducer(state: PersistedState, action: Action): PersistedState {
   }
 }
 
+/** EarnedBadge.code 는 string 이라 좁혀서 쓴다. 이름 맵에 있는 것만 배지 코드다. */
+const isBadgeCode = (code: string): code is BadgeCode => code in BADGE_NAMES;
+
 /**
  * 보상 정산. **리듀서 안에서** 한다 — 별도 이펙트로 빼면 이중 실행 위험이 있다.
  * 리듀서는 단일 스레드라 한 액션 안이면 그 자체로 원자적이다.
@@ -138,20 +156,35 @@ function baseReducer(state: PersistedState, action: Action): PersistedState {
  * CoreRules 8장 정산 순서는 코인 → 스트릭 → 배지다. 스트릭은 저장하지 않고
  * 매번 재계산하므로, 여기서 갱신된 기록으로 먼저 구해 배지 판정에 넘긴다.
  */
-function settle(state: PersistedState): PersistedState {
+function settle(state: StoreState, celebrate: boolean): StoreState {
   const today = getStudyDate(new Date());
   const best = streakFor(state.todosByDate, today).best;
   const rewards = settleRewards(state.todosByDate, state.rewards, today, best);
-  return rewards === state.rewards ? state : { ...state, rewards };
+  if (rewards === state.rewards) return state;
+  // 무엇이 새로 들어왔는지는 정산 전후 목록의 차집합으로 안다. 판정 함수를
+  // 건드리지 않으려는 것이다 — rewards.ts 는 이번 사이클에서 무수정이다.
+  const before = new Set(state.rewards.earnedBadges.map((b) => b.code));
+  const fresh = rewards.earnedBadges
+    .filter((b) => !before.has(b.code))
+    .map((b) => b.code)
+    .filter(isBadgeCode);
+  const justEarned =
+    celebrate && fresh.length > 0 ? [...state.justEarned, ...fresh] : state.justEarned;
+  return { ...state, rewards, justEarned };
 }
 
 /**
  * 상태가 바뀐 액션 뒤에는 항상 정산을 통과시킨다. hydrate 도 마찬가지다 —
  * 앱을 며칠 만에 열었을 때 그동안의 기록이 소급 판정되어야 한다.
  */
-function reducer(state: PersistedState, action: Action): PersistedState {
+function reducer(state: StoreState, action: Action): StoreState {
+  if (action.type === "dismissBadgeCelebration") {
+    return state.justEarned.length === 0 ? state : { ...state, justEarned: [] };
+  }
   const next = baseReducer(state, action);
-  return next === state ? state : settle(next);
+  if (next === state) return state;
+  // hydrate 정산은 축하하지 않는다. 앱을 열자마자 옛 배지로 팝업이 뜨면 안 된다.
+  return settle(next, action.type !== "hydrate");
 }
 
 export type DayStats = { done: number; total: number; rate: number; hasRecord: boolean };
@@ -281,13 +314,18 @@ type StudyStore = {
   coins: number;
   earnedBadges: EarnedBadge[];
   purchasedTrophies: string[];
+  justEarned: BadgeCode[];
+  dismissBadgeCelebration: () => void;
   badgeProgress: BadgeProgress[];
 };
 
 const StudyContext = createContext<StudyStore | null>(null);
 
 export function StudyProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, undefined, createInitialState);
+  const [state, dispatch] = useReducer(reducer, undefined, () => ({
+    ...createInitialState(),
+    justEarned: [],
+  }));
 
   useEffect(() => {
     dispatch({ type: "hydrate", state: loadState() });
@@ -360,6 +398,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       coins: coinBalance(state.rewards),
       earnedBadges: state.rewards.earnedBadges,
       purchasedTrophies: state.rewards.purchasedTrophies,
+      justEarned: state.justEarned,
+      dismissBadgeCelebration: () => dispatch({ type: "dismissBadgeCelebration" }),
       badgeProgress: badgeProgress(state.rewards),
     };
   }, [state]);

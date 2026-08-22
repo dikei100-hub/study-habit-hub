@@ -115,10 +115,16 @@ export function loadState(): PersistedState {
   }
 }
 
+/**
+ * 저장할 세 필드를 **명시적으로 골라서** 직렬화한다. 리듀서는 화면용 임시 값
+ * (justEarned 등)도 함께 들고 있는데, 통째로 넘기면 그것까지 저장돼 저장소가
+ * 오염된다. 거르는 자리를 저장 경계인 여기에 두어 호출부가 늘어도 안전하게 한다.
+ */
 export function saveState(state: PersistedState): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const { todosByDate, templates, rewards } = state;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ todosByDate, templates, rewards }));
   } catch {
     /* 저장 실패는 무시 */
   }

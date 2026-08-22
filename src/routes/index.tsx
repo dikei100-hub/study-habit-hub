@@ -9,9 +9,15 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "공부체크 — 오늘의 공부 습관" },
-      { name: "description", content: "고등학생을 위한 공부 습관 체크앱. 오늘의 할 일과 달성률을 한눈에 확인하세요." },
+      {
+        name: "description",
+        content: "고등학생을 위한 공부 습관 체크앱. 오늘의 할 일과 달성률을 한눈에 확인하세요.",
+      },
       { property: "og:title", content: "공부체크 — 오늘의 공부 습관" },
-      { property: "og:description", content: "오늘의 할 일과 달성률을 한눈에 확인하는 공부 습관 앱." },
+      {
+        property: "og:description",
+        content: "오늘의 할 일과 달성률을 한눈에 확인하는 공부 습관 앱.",
+      },
     ],
   }),
   component: TodayScreen,
@@ -86,42 +92,53 @@ function TodayScreen() {
         </button>
       </div>
 
-      <ul className="space-y-3">
-        {tasks.map((task, i) => (
-          <li key={task.id}>
-            <div
-              className={`flex w-full items-center gap-4 rounded-[20px] px-4 py-4 text-left shadow-soft ${taskTones[i % taskTones.length]}`}
-            >
-              <button
-                type="button"
-                aria-label={`${task.title} 완료 표시`}
-                onClick={() => toggleTodo(today, task.id)}
-                className={`flex size-7 items-center justify-center rounded-md ${task.done ? "bg-check" : "bg-surface"}`}
+      {tasks.length === 0 ? (
+        // 자동으로 깔리지 않으므로 담기 전까지 비어 있다. 안내가 없으면 그냥
+        // 텅 빈 화면으로 보인다. 문구가 리스트 관리 버튼을 가리킨다.
+        <Card className="text-center">
+          <p className="text-lg font-extrabold text-foreground">오늘 할 일이 비어 있어요</p>
+          <p className="mt-2 text-base text-muted-foreground">
+            리스트 관리에서 오늘 할 일을 담아보세요
+          </p>
+        </Card>
+      ) : (
+        <ul className="space-y-3">
+          {tasks.map((task, i) => (
+            <li key={task.id}>
+              <div
+                className={`flex w-full items-center gap-4 rounded-[20px] px-4 py-4 text-left shadow-soft ${taskTones[i % taskTones.length]}`}
               >
-                {task.done && <Check size={18} strokeWidth={3} className="text-surface" />}
-              </button>
-              <button
-                type="button"
-                onClick={() => toggleTodo(today, task.id)}
-                className="flex-1 text-left text-lg font-semibold text-foreground"
-              >
-                {task.title}
-              </button>
-              <span className="text-sm font-bold text-muted-foreground">
-                {task.done ? "완료" : "진행 중"}
-              </span>
-              <button
-                type="button"
-                aria-label={`${task.title} 삭제`}
-                onClick={() => removeTodo(today, task.id)}
-                className="p-1 text-muted-foreground"
-              >
-                <Trash2 size={18} />
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
+                <button
+                  type="button"
+                  aria-label={`${task.title} 완료 표시`}
+                  onClick={() => toggleTodo(today, task.id)}
+                  className={`flex size-7 items-center justify-center rounded-md ${task.done ? "bg-check" : "bg-surface"}`}
+                >
+                  {task.done && <Check size={18} strokeWidth={3} className="text-surface" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleTodo(today, task.id)}
+                  className="flex-1 text-left text-lg font-semibold text-foreground"
+                >
+                  {task.title}
+                </button>
+                <span className="text-sm font-bold text-muted-foreground">
+                  {task.done ? "완료" : "진행 중"}
+                </span>
+                <button
+                  type="button"
+                  aria-label={`${task.title} 삭제`}
+                  onClick={() => removeTodo(today, task.id)}
+                  className="p-1 text-muted-foreground"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
       {sheetOpen && <ListSheet date={today} onClose={() => setSheetOpen(false)} />}
     </Screen>
   );

@@ -44,9 +44,7 @@ export function ListSheet({ date, onClose }: { date: string; onClose: () => void
           <Mascot kind="hello" size={64} />
           <div>
             <p className="text-lg font-extrabold text-foreground">조금씩 해도 충분해!</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              체크하면 그 날짜 할 일에 바로 나타나요
-            </p>
+            <p className="mt-1 text-sm text-muted-foreground">체크하면 그 날짜 할 일에 담겨요</p>
           </div>
         </div>
 

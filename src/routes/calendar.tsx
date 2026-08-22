@@ -253,20 +253,30 @@ function CalendarScreen() {
         </div>
       </div>
 
-      <ul className="space-y-3">
-        {selectedTasks.map((task, i) => (
-          <li key={task.id}>
-            <TaskRow
-              task={task}
-              tone={taskTones[i % taskTones.length] ?? ""}
-              editable={canToggle(selected)}
-              manageable={canManage(selected)}
-              onToggle={() => toggleTodo(selected, task.id)}
-              onRemove={() => removeTodo(selected, task.id)}
-            />
-          </li>
-        ))}
-      </ul>
+      {selectedTasks.length === 0 ? (
+        // 과거는 되돌아볼 기록이 없는 것이고, 오늘·미래는 아직 담지 않은 것이다.
+        // 두 경우는 사용자가 할 수 있는 일이 다르므로 문구를 가른다.
+        <Card className="text-center">
+          <p className="text-base text-muted-foreground">
+            {canManage(selected) ? "아직 담은 할 일이 없어요" : "이 날은 기록이 없어요"}
+          </p>
+        </Card>
+      ) : (
+        <ul className="space-y-3">
+          {selectedTasks.map((task, i) => (
+            <li key={task.id}>
+              <TaskRow
+                task={task}
+                tone={taskTones[i % taskTones.length] ?? ""}
+                editable={canToggle(selected)}
+                manageable={canManage(selected)}
+                onToggle={() => toggleTodo(selected, task.id)}
+                onRemove={() => removeTodo(selected, task.id)}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
       {sheetOpen && <ListSheet date={selected} onClose={() => setSheetOpen(false)} />}
     </Screen>
   );

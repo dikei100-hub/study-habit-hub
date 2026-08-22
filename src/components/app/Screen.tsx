@@ -50,7 +50,9 @@ export function Card({
   );
 }
 
-export function MascotSlot({ size = 96 }: { size?: number }) {
+// 배지 이미지는 아직 없다. 배지 격자에서 자리만 잡는 회색 원.
+// 배지 12종을 붙이는 사이클에서 이것을 갈아끼운다.
+export function BadgeSlot({ size = 96 }: { size?: number }) {
   return (
     <div
       aria-hidden

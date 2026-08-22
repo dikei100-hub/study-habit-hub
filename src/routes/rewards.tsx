@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronRight, Trophy } from "lucide-react";
-import { Card, MascotSlot, Screen } from "@/components/app/Screen";
+import { BadgeSlot, Card, Mascot, Screen } from "@/components/app/Screen";
 import { badges, trophies } from "@/mockData";
 
 export const Route = createFileRoute("/rewards")({
@@ -19,7 +19,7 @@ function RewardsScreen() {
   return (
     <Screen>
       <Card tone="blush" className="mb-5 flex items-center gap-4">
-        <MascotSlot size={88} />
+        <Mascot kind="congrats" size={88} />
         <div>
           <h1 className="text-xl font-extrabold text-foreground">잘하고 있어요! 🎉</h1>
           <p className="mt-1 text-base leading-relaxed text-muted-foreground">
@@ -44,7 +44,7 @@ function RewardsScreen() {
               key={b.id}
               className="flex flex-col items-center gap-3 rounded-[18px] bg-surface px-3 py-5"
             >
-              <MascotSlot size={72} />
+              <BadgeSlot size={72} />
               <span className="text-base font-bold text-foreground">{b.name}</span>
             </li>
           ))}

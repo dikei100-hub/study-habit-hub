@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CalendarDays, Check, Trash2 } from "lucide-react";
-import { Card, MascotSlot, Screen } from "@/components/app/Screen";
+import { Card, Mascot, Screen, type MascotKind } from "@/components/app/Screen";
 import { ListSheet } from "@/components/app/ListSheet";
 import { useStudy } from "@/state/StudyStore";
 
@@ -19,11 +19,29 @@ export const Route = createFileRoute("/")({
 
 const taskTones = ["bg-task-green", "bg-task-sky", "bg-task-peach"];
 
+/**
+ * 달성률 3단계. 마스코트와 인사말이 **같은 판정 결과**를 쓴다.
+ * 두 군데서 따로 rate 를 비교하면 나중에 경계를 바꿀 때 어긋난다.
+ */
+export const todayStages: { kind: MascotKind; title: string; sub: string }[] = [
+  { kind: "hello", title: "오늘도 화이팅!", sub: "조금씩 해내는 하루가 쌓여요 💜" },
+  { kind: "good", title: "잘하고 있어요!", sub: "이 기세로 끝까지 가봐요 💜" },
+  {
+    kind: "congrats",
+    title: "오늘 목표 달성! 🎉",
+    sub: "정말 최고예요, 오늘 하루 수고했어요 💜",
+  },
+];
+
+/** 0% → 시작 전, 1~99% → 진행 중, 100% → 목표 달성. */
+export const stageIndexFor = (rate: number): number => (rate === 100 ? 2 : rate > 0 ? 1 : 0);
+
 function TodayScreen() {
   const { today, tasksFor, statsFor, toggleTodo, removeTodo, streak, ensureDate } = useStudy();
   const [sheetOpen, setSheetOpen] = useState(false);
   const tasks = tasksFor(today) ?? [];
   const { done, rate } = statsFor(today);
+  const stage = todayStages[stageIndexFor(rate)]!;
 
   useEffect(() => {
     ensureDate(today);
@@ -32,16 +50,10 @@ function TodayScreen() {
   return (
     <Screen>
       <section className="mb-6 flex items-center gap-4">
-        <MascotSlot />
+        <Mascot kind={stage.kind} />
         <div>
-          <h1 className="text-2xl font-extrabold text-foreground">
-            {rate === 100 ? "오늘 목표 달성! 🎉" : "오늘도 화이팅!"}
-          </h1>
-          <p className="mt-1 text-base leading-relaxed text-muted-foreground">
-            {rate === 100
-              ? "정말 최고예요, 오늘 하루 수고했어요 💜"
-              : "조금씩 해내는 하루가 쌓여요 💜"}
-          </p>
+          <h1 className="text-2xl font-extrabold text-foreground">{stage.title}</h1>
+          <p className="mt-1 text-base leading-relaxed text-muted-foreground">{stage.sub}</p>
         </div>
       </section>
 

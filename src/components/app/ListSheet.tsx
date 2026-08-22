@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Check, Trash2, X } from "lucide-react";
-import { MascotSlot } from "@/components/app/Screen";
+import { Mascot } from "@/components/app/Screen";
 import { useStudy } from "@/state/StudyStore";
 
 const taskTones = ["bg-task-green", "bg-task-sky", "bg-task-peach"];
@@ -41,7 +41,7 @@ export function ListSheet({ date, onClose }: { date: string; onClose: () => void
         </div>
 
         <div className="mb-4 flex items-center gap-4">
-          <MascotSlot size={64} />
+          <Mascot kind="hello" size={64} />
           <div>
             <p className="text-lg font-extrabold text-foreground">조금씩 해도 충분해!</p>
             <p className="mt-1 text-sm text-muted-foreground">

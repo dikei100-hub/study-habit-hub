@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Card, MascotSlot, Screen } from "@/components/app/Screen";
+import { Card, Mascot, Screen } from "@/components/app/Screen";
 import { Ring } from "@/components/app/Ring";
 import { useStudy } from "@/state/StudyStore";
 import { shortLabel } from "@/lib/studyDay";
@@ -41,7 +41,7 @@ function StatsScreen() {
         </Card>
         <Card tone="lilac" className="flex flex-col items-center gap-3">
           <span className="text-base font-bold text-foreground">꾸준함이 힘이에요!</span>
-          <MascotSlot size={84} />
+          <Mascot kind="graduate" size={84} />
         </Card>
       </div>
 

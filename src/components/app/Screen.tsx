@@ -10,7 +10,7 @@ export function Screen({ children }: { children: ReactNode }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   // 네 화면이 모두 Screen 을 쓰므로 여기 두면 어느 탭에 있든 축하가 뜬다.
   // 오늘 화면에서 체크하다 받는 것이 가장 흔한 경로다.
-  const { justEarned, dismissBadgeCelebration } = useStudy();
+  const { justEarned, dismissCelebration } = useStudy();
 
   return (
     <div className="min-h-screen bg-background">
@@ -32,7 +32,7 @@ export function Screen({ children }: { children: ReactNode }) {
       </div>
       {settingsOpen && <SettingsSheet onClose={() => setSettingsOpen(false)} />}
       {justEarned.length > 0 && (
-        <BadgeCelebration codes={justEarned} onClose={dismissBadgeCelebration} />
+        <BadgeCelebration items={justEarned} onClose={dismissCelebration} />
       )}
     </div>
   );

@@ -274,3 +274,17 @@ export function trophyProgress(rewards: RewardsState, coins: number): TrophyProg
     };
   });
 }
+
+/**
+ * 이 트로피를 지금 살 수 있는가. **trophyProgress 와 같은 판정을 쓴다** —
+ * 두 곳에서 따로 계산하면 화면이 살 수 있다고 보여주는데 액션이 거부하는,
+ * 눌러도 안 되는 버튼이 생긴다.
+ *
+ * 잔액을 빼는 것은 이 파일 어디에도 없다. 잔액은 파생값이라 purchasedTrophies
+ * 에 하나 더하면 저절로 줄어든다(coinBalance).
+ */
+export function canPurchase(rewards: RewardsState, coins: number, id: string): boolean {
+  const target = trophyProgress(rewards, coins).find((t) => t.id === id);
+  if (!target) return false;
+  return !target.owned && target.blockedBy === null && target.affordable;
+}

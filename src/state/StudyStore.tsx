@@ -11,12 +11,15 @@ import type { TemplateItem, TodosByDate } from "@/lib/seed";
 import { todoIdFor } from "@/lib/seed";
 import {
   BADGE_NAMES,
+  TROPHY_NAMES,
   badgeProgress,
+  canPurchase,
   coinBalance,
   settleRewards,
   trophyProgress,
   type BadgeCode,
   type BadgeProgress,
+  type TrophyId,
   type TrophyProgress,
 } from "@/lib/rewards";
 import {
@@ -29,14 +32,24 @@ import {
 import { addDays, getStudyDate, monthKeys, parseDateKey, weekKeys } from "@/lib/studyDay";
 
 /**
+ * 축하 팝업이 그릴 것 하나. **id 까지 담는다** — 팝업이 이름으로 코드를
+ * 역추적하지 않게 하려는 것이고, 판별 유니온이라 kind 를 가르면
+ * `Badge code={item.id}` · `Trophy id={item.id}` 가 타입으로 안전해진다.
+ */
+export type BadgeCelebrationItem = { kind: "badge"; id: BadgeCode; name: string };
+export type TrophyCelebrationItem = { kind: "trophy"; id: TrophyId; name: string };
+export type CelebrationItem = BadgeCelebrationItem | TrophyCelebrationItem;
+
+/**
  * 리듀서가 들고 있는 상태. `justEarned` 는 축하 팝업만 보는 **임시 값이라
  * 저장하지 않는다** — saveState 가 세 필드만 골라 넘기므로 저장소에 새지 않는다.
  */
-type StoreState = PersistedState & { justEarned: BadgeCode[] };
+type StoreState = PersistedState & { justEarned: CelebrationItem[] };
 
 type Action =
   | { type: "hydrate"; state: PersistedState }
-  | { type: "dismissBadgeCelebration" }
+  | { type: "dismissCelebration" }
+  | { type: "purchaseTrophy"; id: TrophyId }
   | { type: "toggleTodo"; date: string; id: string }
   | { type: "addTemplate"; date: string; title: string }
   | { type: "setTemplateOnDate"; date: string; id: string; on: boolean }
@@ -143,6 +156,24 @@ function baseReducer(state: StoreState, action: Action): StoreState {
         todosByDate: { ...s.todosByDate, [action.date]: list.filter((t) => t.id !== action.id) },
       };
     }
+    /**
+     * 트로피 구매. **잔액을 빼지 않는다** — 잔액은
+     * `지급 날짜 수 × 10 − 구매한 트로피 값의 합` 으로 파생되므로 목록에 하나
+     * 더하면 저절로 줄어든다. 그래서 이중 차감이 구조적으로 불가능하다.
+     *
+     * 막아야 할 것은 같은 트로피를 두 번 사는 것 하나뿐이고, **실행 시점에
+     * 다시 검사한다.** 화면의 가드만 믿지 않는다(Lessons 3-7).
+     */
+    case "purchaseTrophy": {
+      if (!canPurchase(state.rewards, coinBalance(state.rewards), action.id)) return state;
+      return {
+        ...state,
+        rewards: {
+          ...state.rewards,
+          purchasedTrophies: [...state.rewards.purchasedTrophies, action.id],
+        },
+      };
+    }
     default:
       return state;
   }
@@ -166,10 +197,11 @@ function settle(state: StoreState, celebrate: boolean): StoreState {
   // 무엇이 새로 들어왔는지는 정산 전후 목록의 차집합으로 안다. 판정 함수를
   // 건드리지 않으려는 것이다 — rewards.ts 는 이번 사이클에서 무수정이다.
   const before = new Set(state.rewards.earnedBadges.map((b) => b.code));
-  const fresh = rewards.earnedBadges
+  const fresh: CelebrationItem[] = rewards.earnedBadges
     .filter((b) => !before.has(b.code))
     .map((b) => b.code)
-    .filter(isBadgeCode);
+    .filter(isBadgeCode)
+    .map((code) => ({ kind: "badge", id: code, name: BADGE_NAMES[code] }));
   const justEarned =
     celebrate && fresh.length > 0 ? [...state.justEarned, ...fresh] : state.justEarned;
   return { ...state, rewards, justEarned };
@@ -180,13 +212,25 @@ function settle(state: StoreState, celebrate: boolean): StoreState {
  * 앱을 며칠 만에 열었을 때 그동안의 기록이 소급 판정되어야 한다.
  */
 function reducer(state: StoreState, action: Action): StoreState {
-  if (action.type === "dismissBadgeCelebration") {
+  if (action.type === "dismissCelebration") {
     return state.justEarned.length === 0 ? state : { ...state, justEarned: [] };
   }
   const next = baseReducer(state, action);
   if (next === state) return state;
+  // 구매한 트로피도 축하 대상이다. 첫 구매는 b12 도 함께 붙으므로, 아래 settle 이
+  // 그 배지를 같은 목록에 이어 담아 팝업 하나가 둘을 함께 보여준다.
+  const withTrophy: StoreState =
+    action.type === "purchaseTrophy"
+      ? {
+          ...next,
+          justEarned: [
+            ...next.justEarned,
+            { kind: "trophy", id: action.id, name: TROPHY_NAMES[action.id] ?? action.id },
+          ],
+        }
+      : next;
   // hydrate 정산은 축하하지 않는다. 앱을 열자마자 옛 배지로 팝업이 뜨면 안 된다.
-  return settle(next, action.type !== "hydrate");
+  return settle(withTrophy, action.type !== "hydrate");
 }
 
 export type DayStats = { done: number; total: number; rate: number; hasRecord: boolean };
@@ -315,8 +359,9 @@ type StudyStore = {
   coins: number;
   earnedBadges: EarnedBadge[];
   purchasedTrophies: string[];
-  justEarned: BadgeCode[];
-  dismissBadgeCelebration: () => void;
+  justEarned: CelebrationItem[];
+  dismissCelebration: () => void;
+  purchaseTrophy: (id: TrophyId) => void;
   badgeProgress: BadgeProgress[];
   trophyProgress: TrophyProgress[];
 };
@@ -394,7 +439,8 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       earnedBadges: state.rewards.earnedBadges,
       purchasedTrophies: state.rewards.purchasedTrophies,
       justEarned: state.justEarned,
-      dismissBadgeCelebration: () => dispatch({ type: "dismissBadgeCelebration" }),
+      dismissCelebration: () => dispatch({ type: "dismissCelebration" }),
+      purchaseTrophy: (id) => dispatch({ type: "purchaseTrophy", id }),
       badgeProgress: badgeProgress(state.rewards),
       trophyProgress: trophyProgress(state.rewards, coinBalance(state.rewards)),
     };

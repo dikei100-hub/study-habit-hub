@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Badge } from "@/components/app/Screen";
-import { BADGE_NAMES, type BadgeCode } from "@/lib/rewards";
+import type { CelebrationItem } from "@/state/StudyStore";
 
 // Screen 이 이 파일을 import 하고 이 파일이 Screen 의 Badge 를 import 하므로
 // 순환 import 다. 양쪽 다 최상위에서 상대 바인딩을 읽지 않고 컴포넌트 함수 안에서만
@@ -10,15 +10,23 @@ import { BADGE_NAMES, type BadgeCode } from "@/lib/rewards";
 /** 오래 잡아두면 방해가 된다. 안드로이드 구매 팝업(약 1.5초)보다 조금 길게. */
 const AUTO_CLOSE_MS = 2500;
 
-export function BadgeCelebration({ codes, onClose }: { codes: BadgeCode[]; onClose: () => void }) {
+export function BadgeCelebration({
+  items,
+  onClose,
+}: {
+  items: CelebrationItem[];
+  onClose: () => void;
+}) {
   useEffect(() => {
     const timer = setTimeout(onClose, AUTO_CLOSE_MS);
     return () => clearTimeout(timer);
   }, [onClose]);
 
-  const first = codes[0];
+  // 트로피는 다음 커밋에서 함께 그린다. 지금은 배지만 본다.
+  const badges = items.filter((i) => i.kind === "badge");
+  const first = badges[0];
   if (!first) return null;
-  const title = codes.length === 1 ? `${BADGE_NAMES[first]} 획득!` : `배지 ${codes.length}개 획득!`;
+  const title = badges.length === 1 ? `${first.name} 획득!` : `배지 ${badges.length}개 획득!`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -33,8 +41,8 @@ export function BadgeCelebration({ codes, onClose }: { codes: BadgeCode[]; onClo
         className="relative mx-5 flex w-full max-w-[320px] flex-col items-center gap-4 rounded-[20px] bg-background px-6 py-7 shadow-soft motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in"
       >
         <div className="flex flex-wrap items-center justify-center gap-3">
-          {codes.map((code) => (
-            <Badge key={code} code={code} earned size={88} />
+          {badges.map((b) => (
+            <Badge key={b.id} code={b.id} earned size={88} />
           ))}
         </div>
         <p className="text-center text-xl font-extrabold text-foreground">{title}</p>

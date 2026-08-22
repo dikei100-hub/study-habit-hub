@@ -5,6 +5,7 @@ import { Card, Screen } from "@/components/app/Screen";
 import { ListSheet } from "@/components/app/ListSheet";
 import { useStudy } from "@/state/StudyStore";
 import { makeDateKey, parseDateKey } from "@/lib/studyDay";
+import type { Task } from "@/mockData";
 
 export const Route = createFileRoute("/calendar")({
   head: () => ({
@@ -59,8 +60,85 @@ function DayRing({ rate }: { rate: number }) {
   );
 }
 
+/**
+ * 할 일 한 줄. 날짜에 따라 **세 갈래**로 그린다.
+ *
+ * 완료 체크는 오늘만 된다(스토어의 canToggle). 화면이 그 규칙을 모르고 과거·미래에도
+ * 체크박스를 그리면, 눌러도 아무 일이 없는 죽은 컨트롤이 되어 "고장인가" 로 읽힌다.
+ *
+ * 누를 수 없는 자리는 button 으로도, 비활성 버튼으로도 만들지 않는다. 미완료 자리는 배경 없이
+ * 비워 둔다 — 회색 네모를 남기면 그것 자체가 빈 체크박스로 보여 고친 게 없어진다.
+ * 줄 높이는 size-7 자리를 항상 차지해 세 경우가 같다.
+ */
+function TaskRow({
+  task,
+  tone,
+  editable,
+  manageable,
+  onToggle,
+  onRemove,
+}: {
+  task: Task;
+  tone: string;
+  editable: boolean;
+  manageable: boolean;
+  onToggle: () => void;
+  onRemove: () => void;
+}) {
+  // 오늘이 아니면서 관리가 되면 미래다. 둘 다 아니면 과거.
+  const future = !editable && manageable;
+  const status = task.done ? "완료" : editable ? "진행 중" : future ? "예정" : null;
+
+  return (
+    <div
+      className={`flex w-full items-center gap-4 rounded-[20px] px-4 py-4 text-left shadow-soft ${tone}`}
+    >
+      {editable ? (
+        <button
+          type="button"
+          aria-label={`${task.title} 완료 표시`}
+          onClick={onToggle}
+          className={`flex size-7 items-center justify-center rounded-md ${task.done ? "bg-check" : "bg-surface"}`}
+        >
+          {task.done && <Check size={18} strokeWidth={3} className="text-surface" />}
+        </button>
+      ) : (
+        <span
+          aria-hidden
+          className={`flex size-7 items-center justify-center rounded-md ${task.done ? "bg-check" : ""}`}
+        >
+          {task.done && <Check size={18} strokeWidth={3} className="text-surface" />}
+        </span>
+      )}
+      {editable ? (
+        <button
+          type="button"
+          onClick={onToggle}
+          className="flex-1 text-left text-lg font-semibold text-foreground"
+        >
+          {task.title}
+        </button>
+      ) : (
+        <span className="flex-1 text-left text-lg font-semibold text-foreground">{task.title}</span>
+      )}
+      {status !== null && <span className="text-sm font-bold text-muted-foreground">{status}</span>}
+      {manageable && (
+        <button
+          type="button"
+          aria-label={`${task.title} 삭제`}
+          onClick={onRemove}
+          className="p-1 text-muted-foreground"
+        >
+          <Trash2 size={18} />
+        </button>
+      )}
+    </div>
+  );
+}
+
 function CalendarScreen() {
-  const { today, previewFor, statsFor, toggleTodo, removeTodo, ensureDate, canManage } = useStudy();
+  const { today, previewFor, statsFor, toggleTodo, removeTodo, ensureDate, canToggle, canManage } =
+    useStudy();
   const [sheetOpen, setSheetOpen] = useState(false);
   const todayDate = parseDateKey(today);
   const [view, setView] = useState({
@@ -183,38 +261,14 @@ function CalendarScreen() {
       <ul className="space-y-3">
         {selectedTasks.map((task, i) => (
           <li key={task.id}>
-            <div
-              className={`flex w-full items-center gap-4 rounded-[20px] px-4 py-4 text-left shadow-soft ${taskTones[i % taskTones.length]}`}
-            >
-              <button
-                type="button"
-                aria-label={`${task.title} 완료 표시`}
-                onClick={() => toggleTodo(selected, task.id)}
-                className={`flex size-7 items-center justify-center rounded-md ${task.done ? "bg-check" : "bg-surface"}`}
-              >
-                {task.done && <Check size={18} strokeWidth={3} className="text-surface" />}
-              </button>
-              <button
-                type="button"
-                onClick={() => toggleTodo(selected, task.id)}
-                className="flex-1 text-left text-lg font-semibold text-foreground"
-              >
-                {task.title}
-              </button>
-              <span className="text-sm font-bold text-muted-foreground">
-                {task.done ? "완료" : "진행 중"}
-              </span>
-              {canManage(selected) && (
-                <button
-                  type="button"
-                  aria-label={`${task.title} 삭제`}
-                  onClick={() => removeTodo(selected, task.id)}
-                  className="p-1 text-muted-foreground"
-                >
-                  <Trash2 size={18} />
-                </button>
-              )}
-            </div>
+            <TaskRow
+              task={task}
+              tone={taskTones[i % taskTones.length] ?? ""}
+              editable={canToggle(selected)}
+              manageable={canManage(selected)}
+              onToggle={() => toggleTodo(selected, task.id)}
+              onRemove={() => removeTodo(selected, task.id)}
+            />
           </li>
         ))}
       </ul>

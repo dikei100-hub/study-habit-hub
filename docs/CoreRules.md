@@ -12,9 +12,16 @@
 ## 0. 문서 우선순위
 
 1. **CoreRules.md** (이 문서) — 웹 트랙 확정 규칙
-2. `RewardSystemDesign.md` — 보상 규칙 (2026-07-10, 비교적 최신)
-3. `DateBasedTodoDesign.md` — 날짜별 할 일 설계 (방식 A 템플릿)
+2. `DateBasedTodoDesign.md` — 날짜별 할 일 설계 (방식 A 템플릿)
+3. `RewardSystemDesign.md` — **보상 개편 이전 기준. 프리즈 상세만 참고.**
+   8장이 안드로이드 최신 기준을 흡수하면서 배지·스트릭 부분이 낡았다.
 4. `ScreenDesign.md` / `FunctionalSpec.md` — **낡음. 참고만.**
+
+참고 자료 (규칙 아님 — 판단 근거로만 읽는다):
+
+- `CrossTrack_Lessons.md` — 안드로이드판의 **판단 근거와 실패 경험.**
+  왜 그렇게 정했는지가 필요할 때 본다. 규칙 자체는 이 문서가 우선.
+- `CrossTrack_AppSpec.md` — 안드로이드판 화면·기능 사양. 5·6장 위주로 참고.
 
 ### 낡은 내용 목록 (따르지 말 것)
 

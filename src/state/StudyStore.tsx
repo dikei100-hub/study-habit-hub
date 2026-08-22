@@ -280,6 +280,7 @@ type StudyStore = {
   // 보상 셀렉터. 화면 연결은 B-2 에서 한다.
   coins: number;
   earnedBadges: EarnedBadge[];
+  purchasedTrophies: string[];
   badgeProgress: BadgeProgress[];
 };
 
@@ -358,6 +359,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       streak: streakFor(todos, today),
       coins: coinBalance(state.rewards),
       earnedBadges: state.rewards.earnedBadges,
+      purchasedTrophies: state.rewards.purchasedTrophies,
       badgeProgress: badgeProgress(state.rewards),
     };
   }, [state]);

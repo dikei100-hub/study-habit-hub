@@ -51,18 +51,6 @@ export function Card({
   );
 }
 
-// 배지 이미지는 아직 없다. 배지 격자에서 자리만 잡는 회색 원.
-// 배지 12종을 붙이는 사이클에서 이것을 갈아끼운다.
-export function BadgeSlot({ size = 96 }: { size?: number }) {
-  return (
-    <div
-      aria-hidden
-      className="shrink-0 rounded-full bg-muted"
-      style={{ width: size, height: size }}
-    />
-  );
-}
-
 // 배지 파일명은 옛 코드라 현재 조건과 다르다(badge_study_10 이 "누적 100개"다).
 // 화면이 경로를 직접 쓰지 않도록 매핑은 여기 한 곳에만 둔다.
 // 기준은 CrossTrack_Assets.md 2절이고, 파일명으로 짐작하지 말 것.

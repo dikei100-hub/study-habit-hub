@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ChevronRight, Trophy } from "lucide-react";
-import { BadgeSlot, Card, Mascot, Screen } from "@/components/app/Screen";
-import { badges, trophies } from "@/mockData";
+import { ChevronRight, Coins, Trophy as TrophyIcon } from "lucide-react";
+import { Badge, Card, Mascot, Screen, Trophy, type TrophyId } from "@/components/app/Screen";
+import { useStudy } from "@/state/StudyStore";
 
 export const Route = createFileRoute("/rewards")({
   head: () => ({
@@ -15,7 +15,19 @@ export const Route = createFileRoute("/rewards")({
   component: RewardsScreen,
 });
 
+const trophyNames: Record<TrophyId, string> = {
+  bronze: "브론즈",
+  silver: "실버",
+  gold: "골드",
+};
+
+const isTrophyId = (id: string): id is TrophyId => id in trophyNames;
+
 function RewardsScreen() {
+  const { coins, badgeProgress, purchasedTrophies } = useStudy();
+  const earnedCount = badgeProgress.filter((b) => b.earned).length;
+  const owned = purchasedTrophies.filter(isTrophyId);
+
   return (
     <Screen>
       <Card tone="blush" className="mb-5 flex items-center gap-4">
@@ -28,6 +40,14 @@ function RewardsScreen() {
         </div>
       </Card>
 
+      <Card tone="lemon" className="mb-5 flex items-center justify-between">
+        <span className="flex items-center gap-2 text-lg font-bold text-foreground">
+          <Coins size={22} className="text-muted-foreground" />
+          보유 코인
+        </span>
+        <span className="text-3xl font-extrabold text-foreground">{coins}</span>
+      </Card>
+
       <button
         type="button"
         className="mb-5 flex w-full items-center justify-between rounded-[20px] bg-lilac px-5 py-5 shadow-soft"
@@ -37,15 +57,23 @@ function RewardsScreen() {
       </button>
 
       <Card tone="lilac" className="mb-5">
-        <h2 className="text-lg font-extrabold text-foreground">획득한 배지</h2>
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-lg font-extrabold text-foreground">배지</h2>
+          <span className="text-sm text-muted-foreground">{earnedCount} / 12</span>
+        </div>
+        {/* 미획득도 이름과 함께 남는다. 목표가 보여야 동기가 된다(CoreRules 8장). */}
         <ul className="mt-4 grid grid-cols-2 gap-4">
-          {badges.map((b) => (
+          {badgeProgress.map((b) => (
             <li
-              key={b.id}
+              key={b.code}
               className="flex flex-col items-center gap-3 rounded-[18px] bg-surface px-3 py-5"
             >
-              <BadgeSlot size={72} />
-              <span className="text-base font-bold text-foreground">{b.name}</span>
+              <Badge code={b.code} earned={b.earned} size={72} />
+              <span
+                className={`text-base font-bold ${b.earned ? "text-foreground" : "text-muted-foreground"}`}
+              >
+                {b.name}
+              </span>
             </li>
           ))}
         </ul>
@@ -53,14 +81,27 @@ function RewardsScreen() {
 
       <Card tone="lilac">
         <h2 className="text-lg font-extrabold text-foreground">획득한 트로피</h2>
-        {trophies.length === 0 ? (
+        {owned.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-6">
             <div className="flex size-24 items-center justify-center rounded-full bg-muted">
-              <Trophy size={40} className="text-muted-foreground" />
+              <TrophyIcon size={40} className="text-muted-foreground" />
             </div>
             <p className="text-sm text-muted-foreground">아직 트로피가 없어요. 오늘도 한 걸음!</p>
           </div>
-        ) : null}
+        ) : (
+          // 구매는 B-3 이다. 여기서는 보유한 것을 보여주기만 한다.
+          <ul className="mt-4 grid grid-cols-3 gap-4">
+            {owned.map((id) => (
+              <li
+                key={id}
+                className="flex flex-col items-center gap-3 rounded-[18px] bg-surface px-3 py-5"
+              >
+                <Trophy id={id} size={72} />
+                <span className="text-base font-bold text-foreground">{trophyNames[id]}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </Card>
     </Screen>
   );

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { ChevronRight, Coins, Trophy as TrophyIcon } from "lucide-react";
+import { ChevronRight, Trophy as TrophyIcon } from "lucide-react";
 import { CollectionSheet } from "@/components/app/CollectionSheet";
 import { Badge, Card, Mascot, Screen, Trophy } from "@/components/app/Screen";
 import { TROPHY_NAMES, TROPHY_ORDER, type TrophyId } from "@/lib/rewards";
@@ -23,9 +23,10 @@ export const Route = createFileRoute("/rewards")({
 const isTrophyId = (id: string): id is TrophyId => (TROPHY_ORDER as readonly string[]).includes(id);
 
 function RewardsScreen() {
-  const { coins, badgeProgress, purchasedTrophies } = useStudy();
+  const { badgeProgress, purchasedTrophies } = useStudy();
   const [collectionOpen, setCollectionOpen] = useState(false);
-  const earnedCount = badgeProgress.filter((b) => b.earned).length;
+  // 보상 탭은 "받은 것을 본다". 전체 12종과 조건은 컬렉션에 있다.
+  const earned = badgeProgress.filter((b) => b.earned);
   const owned = purchasedTrophies.filter(isTrophyId);
 
   return (
@@ -40,14 +41,6 @@ function RewardsScreen() {
         </div>
       </Card>
 
-      <Card tone="lemon" className="mb-5 flex items-center justify-between">
-        <span className="flex items-center gap-2 text-lg font-bold text-foreground">
-          <Coins size={22} className="text-muted-foreground" />
-          보유 코인
-        </span>
-        <span className="text-3xl font-extrabold text-foreground">{coins}</span>
-      </Card>
-
       <button
         type="button"
         onClick={() => setCollectionOpen(true)}
@@ -58,26 +51,24 @@ function RewardsScreen() {
       </button>
 
       <Card tone="lilac" className="mb-5">
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-lg font-extrabold text-foreground">배지</h2>
-          <span className="text-sm text-muted-foreground">{earnedCount} / 12</span>
-        </div>
-        {/* 미획득도 이름과 함께 남는다. 목표가 보여야 동기가 된다(CoreRules 8장). */}
-        <ul className="mt-4 grid grid-cols-2 gap-4">
-          {badgeProgress.map((b) => (
-            <li
-              key={b.code}
-              className="flex flex-col items-center gap-3 rounded-[18px] bg-surface px-3 py-5"
-            >
-              <Badge code={b.code} earned={b.earned} size={72} />
-              <span
-                className={`text-base font-bold ${b.earned ? "text-foreground" : "text-muted-foreground"}`}
+        <h2 className="text-lg font-extrabold text-foreground">획득한 배지</h2>
+        {earned.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            아직 배지가 없어요. 첫 배지를 받아볼까요?
+          </p>
+        ) : (
+          <ul className="mt-4 grid grid-cols-2 gap-4">
+            {earned.map((b) => (
+              <li
+                key={b.code}
+                className="flex flex-col items-center gap-3 rounded-[18px] bg-surface px-3 py-5"
               >
-                {b.name}
-              </span>
-            </li>
-          ))}
-        </ul>
+                <Badge code={b.code} earned size={72} />
+                <span className="text-base font-bold text-foreground">{b.name}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </Card>
 
       <Card tone="lilac">

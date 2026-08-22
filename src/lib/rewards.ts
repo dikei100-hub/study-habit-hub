@@ -75,7 +75,7 @@ export const BADGE_REQUIREMENTS: Record<BadgeCode, string> = {
   b08: "할 일 100개 완료",
   b09: "할 일 300개 완료",
   b10: "할 일 500개 완료",
-  b11: "하루 5개 이상 한 날 100일",
+  b11: "하루 5개 이상 완료 100일",
   b12: "트로피 첫 구매",
 };
 
